@@ -158,16 +158,16 @@ function Content() {
       </Authenticated>
 
       <Unauthenticated>
-        <div className="flex items-center justify-center min-h-screen py-10">
+        <div className="flex items-center justify-center min-h-screen py-4 md:py-8">
           <div className="w-full max-w-md mx-auto px-6 text-center">
-            <div className="mb-10">
-              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl rotate-3">
-                <Wallet className="w-8 h-8 text-white" strokeWidth={2.5} />
+            <div className="mb-6">
+              <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl rotate-3">
+                <Wallet className="w-6 h-6 text-white" strokeWidth={2.5} />
               </div>
-              <h1 className="text-4xl font-black text-slate-900 mb-3 tracking-tight">FinTrack</h1>
-              <p className="text-lg text-slate-500">נהלו את הכספים שלכם בצורה חכמה ומקצועית</p>
+              <h1 className="text-3xl font-black text-slate-900 mb-1 tracking-tight">FinTrack</h1>
+              <p className="text-sm text-slate-500 font-medium">נהלו את הכספים בצורה חכמה</p>
             </div>
-            <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+            <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-xl border border-slate-100">
               <SignInForm />
             </div>
           </div>
