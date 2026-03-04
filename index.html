@@ -5,12 +5,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/src/index.css" />
 
-    <title>Chef</title>
+    <title>FinTrack | ניהול כספים חכם</title>
 
     <meta property="og:image" content="/og-preview.png" />
+    <style>
+      #initial-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        z-index: 9999;
+        transition: opacity 0.5s ease;
+      }
+      .loader-logo {
+        width: 64px;
+        height: 64px;
+        background: black;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        animation: pulse 2s infinite ease-in-out;
+      }
+      .loader-logo svg {
+        color: white;
+        width: 32px;
+        height: 32px;
+      }
+      .loader-text {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-weight: 800;
+        font-size: 20px;
+        color: #0f172a;
+        letter-spacing: -0.025em;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.8; }
+      }
+    </style>
   </head>
   <body>
+    <div id="initial-loader">
+      <div class="loader-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+      </div>
+      <div class="loader-text">FinTrack</div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Remove the loader once the app is ready
+      window.addEventListener('load', () => {
+        const loader = document.getElementById('initial-loader');
+        if (loader) {
+          setTimeout(() => {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 500);
+          }, 300);
+        }
+      });
+    </script>
   </body>
 </html>

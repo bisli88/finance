@@ -37,21 +37,10 @@ export function Accounts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-slate-900">החשבונות שלי</h2>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-black text-white px-4 py-2 rounded-xl hover:bg-slate-800 transition-all flex items-center gap-2 text-sm font-bold shadow-sm"
-        >
-          <Plus size={18} />
-          הוסף חשבון
-        </button>
-      </div>
-
       {showForm && (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6 md:p-8 animate-in fade-in zoom-in duration-300">
+        <div className="bg-slate-50 rounded-3xl border border-slate-200 p-6 md:p-8 animate-in fade-in zoom-in duration-300 mb-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-slate-100 rounded-xl">
+            <div className="p-2 bg-white rounded-xl shadow-sm">
               <PlusCircle className="w-5 h-5 text-slate-700" />
             </div>
             <h3 className="text-lg font-bold">הוספת חשבון חדש</h3>
@@ -65,7 +54,7 @@ export function Accounts() {
                   placeholder="בנק לאומי, מזומן..."
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm"
                   required
                 />
               </div>
@@ -78,7 +67,7 @@ export function Accounts() {
                     step="0.01"
                     value={formData.balance}
                     onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
-                    className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm"
+                    className="w-full pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm"
                   />
                 </div>
               </div>
@@ -102,7 +91,7 @@ export function Accounts() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {accounts.map((account) => (
           <div key={account._id} className="group bg-white rounded-3xl border border-slate-200 shadow-sm p-6 hover:shadow-md hover:border-slate-300 transition-all relative overflow-hidden">
             <div className="flex justify-between items-start mb-6">
@@ -137,18 +126,15 @@ export function Accounts() {
           </div>
         ))}
 
-        {accounts.length === 0 && !showForm && (
-          <button 
-            onClick={() => setShowForm(true)}
-            className="md:col-span-2 lg:col-span-3 flex flex-col items-center justify-center py-20 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl hover:bg-slate-100 hover:border-slate-300 transition-all group"
-          >
-            <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Plus className="w-8 h-8 text-slate-400" />
-            </div>
-            <p className="text-slate-500 font-bold mb-1">אין עדיין חשבונות</p>
-            <p className="text-slate-400 text-sm">לחץ כאן כדי ליצור את החשבון הראשון שלך</p>
-          </button>
-        )}
+        <button 
+          onClick={() => setShowForm(true)}
+          className="flex flex-col items-center justify-center py-12 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl hover:bg-slate-100 hover:border-slate-300 transition-all group"
+        >
+          <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+            <Plus className="w-6 h-6 text-slate-400" />
+          </div>
+          <p className="text-slate-500 font-bold text-sm">הוסף חשבון חדש</p>
+        </button>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { Accounts } from "./components/Accounts";
 import { Transactions } from "./components/Transactions";
 import { Budgets } from "./components/Budgets";
 import { Settings } from "./components/Settings";
+import { Analytics } from "./components/Analytics";
 import { useMutation } from "convex/react";
 import { 
   Home as HomeIcon, 
@@ -16,7 +17,8 @@ import {
   ArrowRightLeft, 
   CalendarDays, 
   Settings as SettingsIcon,
-  ChevronLeft
+  ChevronLeft,
+  BarChart3
 } from "lucide-react";
 
 // Privacy Context
@@ -45,8 +47,12 @@ export default function App() {
 
 function Content() {
   const loggedInUser = useQuery(api.auth.loggedInUser);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("home");
   const createDefaults = useMutation(api.categories.createDefaults);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
 
   useEffect(() => {
     if (loggedInUser) {
@@ -56,17 +62,23 @@ function Content() {
 
   if (loggedInUser === undefined) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black"></div>
+      <div className="flex flex-col justify-center items-center min-h-screen bg-[#f8fafc]">
+        <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mb-6 shadow-xl animate-pulse">
+          <Wallet className="w-8 h-8 text-white" strokeWidth={2.5} />
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-200 border-t-black"></div>
+          <span className="text-sm font-bold text-slate-500 tracking-wide">טוען את המידע שלך...</span>
+        </div>
       </div>
     );
   }
 
   const tabs = [
-    { id: "home", label: "עמוד הבית", icon: HomeIcon },
+    { id: "home", label: "בית", icon: HomeIcon },
+    { id: "analytics", label: "ניתוח", icon: BarChart3 },
     { id: "transactions", label: "תנועות", icon: ArrowRightLeft },
     { id: "budgets", label: "תקציבים", icon: CalendarDays },
-    { id: "accounts", label: "חשבונות", icon: Wallet },
     { id: "settings", label: "הגדרות", icon: SettingsIcon },
   ];
 
@@ -108,22 +120,23 @@ function Content() {
 
         {/* Content Area */}
         <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-6 md:py-10">
-          <div className="mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-              {tabs.find(t => t.id === activeTab)?.label}
-            </h1>
-            <p className="text-slate-500 mt-1">
-              {activeTab === "home" && "ברוך הבא! הנה סקירה של המצב הפיננסי שלך"}
-              {activeTab === "accounts" && "נהל את חשבונות הבנק והארנקים שלך"}
-              {activeTab === "transactions" && "עקוב אחר כל ההכנסות וההוצאות שלך"}
-              {activeTab === "budgets" && "תכנן את ההוצאות שלך ועמוד ביעדים"}
-              {activeTab === "settings" && "התאם אישית את הגדרות האפליקציה"}
-            </p>
-          </div>
+          {activeTab !== "home" && (
+            <div className="mb-8">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+                {tabs.find(t => t.id === activeTab)?.label}
+              </h1>
+              <p className="text-slate-500 mt-1">
+                {activeTab === "analytics" && "ניתוח מעמיק של ההכנסות וההוצאות שלך"}
+                {activeTab === "transactions" && "עקוב אחר כל ההכנסות וההוצאות שלך"}
+                {activeTab === "budgets" && "תכנן את ההוצאות שלך ועמוד ביעדים"}
+                {activeTab === "settings" && "התאם אישית את הגדרות האפליקציה ונהל חשבונות"}
+              </p>
+            </div>
+          )}
           
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            {activeTab === "home" && <Dashboard />}
-            {activeTab === "accounts" && <Accounts />}
+            {activeTab === "home" && <Dashboard onNavigate={setActiveTab} />}
+            {activeTab === "analytics" && <Analytics />}
             {activeTab === "transactions" && <Transactions />}
             {activeTab === "budgets" && <Budgets />}
             {activeTab === "settings" && <Settings />}

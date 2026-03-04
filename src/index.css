@@ -64,3 +64,15 @@ input[type=number] {
   pointer-events: none;
   opacity: 0.6;
 }
+
+/* Hide scrollbar on mobile */
+@media (max-width: 768px) {
+  html, body {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  
+  body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+}
