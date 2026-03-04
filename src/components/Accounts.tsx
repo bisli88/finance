@@ -2,6 +2,8 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useState } from "react";
 import { toast } from "sonner";
+import { usePrivacy } from "../App";
+import { Plus, Wallet, CreditCard, Landmark, MoreVertical, PlusCircle } from "lucide-react";
 
 export function Accounts() {
   const accounts = useQuery(api.accounts.list);
@@ -9,27 +11,26 @@ export function Accounts() {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    type: "checking" as const,
     balance: 0,
-    currency: "USD",
+    currency: "ILS",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await createAccount(formData);
-      setFormData({ name: "", type: "checking", balance: 0, currency: "USD" });
+      setFormData({ name: "", balance: 0, currency: "ILS" });
       setShowForm(false);
-      toast.success("Account created successfully");
+      toast.success("החשבון נוצר בהצלחה");
     } catch (error) {
-      toast.error("Failed to create account");
+      toast.error("יצירת החשבון נכשלה");
     }
   };
 
   if (accounts === undefined) {
     return (
-      <div className="flex justify-center items-center min-h-[200px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black"></div>
       </div>
     );
   }
@@ -37,71 +38,64 @@ export function Accounts() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Accounts</h2>
+        <h2 className="text-xl font-bold text-slate-900">החשבונות שלי</h2>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="bg-black text-white px-4 py-2 rounded-xl hover:bg-slate-800 transition-all flex items-center gap-2 text-sm font-bold shadow-sm"
         >
-          Add Account
+          <Plus size={18} />
+          הוסף חשבון
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium mb-4">Add New Account</h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Account Name
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6 md:p-8 animate-in fade-in zoom-in duration-300">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-slate-100 rounded-xl">
+              <PlusCircle className="w-5 h-5 text-slate-700" />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Account Type
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="checking">Checking</option>
-                <option value="savings">Savings</option>
-                <option value="credit">Credit Card</option>
-                <option value="investment">Investment</option>
-              </select>
+            <h3 className="text-lg font-bold">הוספת חשבון חדש</h3>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-700">שם החשבון</label>
+                <input
+                  type="text"
+                  placeholder="בנק לאומי, מזומן..."
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-700">יתרה ראשונית</label>
+                <div className="relative">
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₪</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.balance}
+                    onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
+                    className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Initial Balance
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.balance}
-                onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full sm:flex-1 bg-black text-white px-6 py-3.5 rounded-2xl hover:bg-slate-800 transition-all font-bold text-sm"
               >
-                Create Account
+                צור חשבון
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                className="w-full sm:px-6 py-3.5 bg-slate-100 text-slate-600 rounded-2xl hover:bg-slate-200 transition-all font-bold text-sm"
               >
-                Cancel
+                ביטול
               </button>
             </div>
           </form>
@@ -110,36 +104,52 @@ export function Accounts() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {accounts.map((account) => (
-          <div key={account._id} className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{account.name}</h3>
-                <p className="text-sm text-gray-500 capitalize">{account.type}</p>
+          <div key={account._id} className="group bg-white rounded-3xl border border-slate-200 shadow-sm p-6 hover:shadow-md hover:border-slate-300 transition-all relative overflow-hidden">
+            <div className="flex justify-between items-start mb-6">
+              <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-slate-100 transition-colors">
+                <Landmark className="w-6 h-6 text-slate-700" />
               </div>
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+              <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all">
+                <MoreVertical size={18} />
+              </button>
+            </div>
+            
+            <div className="space-y-1">
+              <h3 className="text-sm font-medium text-slate-500">{account.name}</h3>
+              <p className={`text-2xl font-black tracking-tight blur-amount ${account.balance >= 0 ? 'text-slate-900' : 'text-red-600'}`}>
+                ₪{account.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">
                 {account.currency}
               </span>
-            </div>
-            <div className="text-right">
-              <p className={`text-2xl font-bold ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${account.balance.toFixed(2)}
-              </p>
+              <div className="flex -space-x-2 space-x-reverse opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center">
+                  <CreditCard size={10} className="text-slate-400" />
+                </div>
+                <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center">
+                  <Wallet size={10} className="text-slate-400" />
+                </div>
+              </div>
             </div>
           </div>
         ))}
-      </div>
 
-      {accounts.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">No accounts yet</p>
-          <button
+        {accounts.length === 0 && !showForm && (
+          <button 
             onClick={() => setShowForm(true)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+            className="md:col-span-2 lg:col-span-3 flex flex-col items-center justify-center py-20 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl hover:bg-slate-100 hover:border-slate-300 transition-all group"
           >
-            Create Your First Account
+            <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <Plus className="w-8 h-8 text-slate-400" />
+            </div>
+            <p className="text-slate-500 font-bold mb-1">אין עדיין חשבונות</p>
+            <p className="text-slate-400 text-sm">לחץ כאן כדי ליצור את החשבון הראשון שלך</p>
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

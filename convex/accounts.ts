@@ -9,7 +9,7 @@ export const list = query({
     if (!userId) return [];
 
     return await ctx.db
-      .query("accounts")
+      .query("bankAccounts")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
   },
@@ -18,7 +18,6 @@ export const list = query({
 export const create = mutation({
   args: {
     name: v.string(),
-    type: v.union(v.literal("checking"), v.literal("savings"), v.literal("credit"), v.literal("investment")),
     balance: v.number(),
     currency: v.string(),
   },
@@ -26,10 +25,9 @@ export const create = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    return await ctx.db.insert("accounts", {
+    return await ctx.db.insert("bankAccounts", {
       userId,
       name: args.name,
-      type: args.type,
       balance: args.balance,
       currency: args.currency,
     });
@@ -38,7 +36,7 @@ export const create = mutation({
 
 export const updateBalance = mutation({
   args: {
-    accountId: v.id("accounts"),
+    accountId: v.id("bankAccounts"),
     amount: v.number(),
   },
   handler: async (ctx, args) => {
@@ -63,7 +61,7 @@ export const getTotalBalance = query({
     if (!userId) return 0;
 
     const accounts = await ctx.db
-      .query("accounts")
+      .query("bankAccounts")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 

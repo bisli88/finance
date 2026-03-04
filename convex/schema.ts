@@ -3,10 +3,9 @@ import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
 const applicationTables = {
-  accounts: defineTable({
+  bankAccounts: defineTable({
     userId: v.id("users"),
     name: v.string(),
-    type: v.union(v.literal("checking"), v.literal("savings"), v.literal("credit"), v.literal("investment")),
     balance: v.number(),
     currency: v.string(),
   }).index("by_user", ["userId"]),
@@ -16,18 +15,20 @@ const applicationTables = {
     name: v.string(),
     type: v.union(v.literal("income"), v.literal("expense")),
     color: v.string(),
+    icon: v.optional(v.string()),
   }).index("by_user", ["userId"]),
 
   transactions: defineTable({
     userId: v.id("users"),
-    accountId: v.id("accounts"),
+    accountId: v.id("bankAccounts"),
     categoryId: v.optional(v.id("categories")),
     title: v.string(),
     amount: v.number(),
     type: v.union(v.literal("income"), v.literal("expense"), v.literal("transfer")),
     date: v.string(),
     notes: v.optional(v.string()),
-    transferToAccountId: v.optional(v.id("accounts")),
+    transferToAccountId: v.optional(v.id("bankAccounts")),
+    isRecurring: v.optional(v.boolean()),
   })
     .index("by_user", ["userId"])
     .index("by_account", ["accountId"])

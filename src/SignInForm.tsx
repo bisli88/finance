@@ -18,14 +18,17 @@ export function SignInForm() {
           const formData = new FormData(e.target as HTMLFormElement);
           formData.set("flow", flow);
           void signIn("password", formData).catch((error) => {
+            console.error(error);
             let toastTitle = "";
             if (error.message.includes("Invalid password")) {
-              toastTitle = "Invalid password. Please try again.";
+              toastTitle = "סיסמה לא נכונה. נסה שוב.";
+            } else if (error.message.includes("already exists")) {
+              toastTitle = "חשבון עם אימייל זה כבר קיים.";
             } else {
               toastTitle =
                 flow === "signIn"
-                  ? "Could not sign in, did you mean to sign up?"
-                  : "Could not sign up, did you mean to sign in?";
+                  ? "לא הצלחנו להתחבר, האם התכוונת להירשם?"
+                  : "לא הצלחנו להירשם, האם התכוונת להתחבר?";
             }
             toast.error(toastTitle);
             setSubmitting(false);
@@ -36,41 +39,41 @@ export function SignInForm() {
           className="auth-input-field"
           type="email"
           name="email"
-          placeholder="Email"
+          placeholder='אימייל'
           required
         />
         <input
           className="auth-input-field"
           type="password"
           name="password"
-          placeholder="Password"
+          placeholder='סיסמה'
           required
         />
         <button className="auth-button" type="submit" disabled={submitting}>
-          {flow === "signIn" ? "Sign in" : "Sign up"}
+          {flow === "signIn" ? "התחברות" : "הרשמה"}
         </button>
         <div className="text-center text-sm text-secondary">
           <span>
             {flow === "signIn"
-              ? "Don't have an account? "
-              : "Already have an account? "}
+              ? "אין לך חשבון? "
+              : "כבר יש לך חשבון? "}
           </span>
           <button
             type="button"
             className="text-primary hover:text-primary-hover hover:underline font-medium cursor-pointer"
             onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
           >
-            {flow === "signIn" ? "Sign up instead" : "Sign in instead"}
+            {flow === "signIn" ? "הרשמה במקום" : "התחברות במקום"}
           </button>
         </div>
       </form>
       <div className="flex items-center justify-center my-3">
         <hr className="my-4 grow border-gray-200" />
-        <span className="mx-4 text-secondary">or</span>
+        <span className="mx-4 text-secondary">או</span>
         <hr className="my-4 grow border-gray-200" />
       </div>
       <button className="auth-button" onClick={() => void signIn("anonymous")}>
-        Sign in anonymously
+        התחברות אנונימית
       </button>
     </div>
   );

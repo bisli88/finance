@@ -20,6 +20,7 @@ export const create = mutation({
     name: v.string(),
     type: v.union(v.literal("income"), v.literal("expense")),
     color: v.string(),
+    icon: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -30,6 +31,7 @@ export const create = mutation({
       name: args.name,
       type: args.type,
       color: args.color,
+      icon: args.icon,
     });
   },
 });
@@ -48,14 +50,17 @@ export const createDefaults = mutation({
     if (existingCategories.length > 0) return;
 
     const defaultCategories = [
-      { name: "Salary", type: "income" as const, color: "#10b981" },
-      { name: "Freelance", type: "income" as const, color: "#059669" },
-      { name: "Food & Dining", type: "expense" as const, color: "#ef4444" },
-      { name: "Transportation", type: "expense" as const, color: "#f97316" },
-      { name: "Shopping", type: "expense" as const, color: "#8b5cf6" },
-      { name: "Entertainment", type: "expense" as const, color: "#ec4899" },
-      { name: "Bills & Utilities", type: "expense" as const, color: "#6b7280" },
-      { name: "Healthcare", type: "expense" as const, color: "#06b6d4" },
+      { name: "משכורת", type: "income" as const, color: "#10b981", icon: "Banknote" },
+      { name: "פרילאנס", type: "income" as const, color: "#059669", icon: "Briefcase" },
+      { name: "מענקים", type: "income" as const, color: "#34d399", icon: "Gift" },
+      { name: "אוכל ומסעדות", type: "expense" as const, color: "#ef4444", icon: "Utensils" },
+      { name: "תחבורה", type: "expense" as const, color: "#f97316", icon: "Car" },
+      { name: "קניות", type: "expense" as const, color: "#8b5cf6", icon: "ShoppingBag" },
+      { name: "בילויים", type: "expense" as const, color: "#ec4899", icon: "Palmtree" },
+      { name: "חשבונות ותשלומים", type: "expense" as const, color: "#6b7280", icon: "Receipt" },
+      { name: "בריאות", type: "expense" as const, color: "#06b6d4", icon: "HeartPulse" },
+      { name: "חינוך", type: "expense" as const, color: "#3b82f6", icon: "GraduationCap" },
+      { name: "שכר דירה/משכנתא", type: "expense" as const, color: "#1e293b", icon: "Home" },
     ];
 
     for (const category of defaultCategories) {
@@ -64,5 +69,48 @@ export const createDefaults = mutation({
         ...category,
       });
     }
+  },
+});
+
+export const update = mutation({
+  args: {
+    id: v.id("categories"),
+    name: v.string(),
+    color: v.string(),
+    icon: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const category = await ctx.db.get(args.id);
+    if (!category || category.userId !== userId) {
+      throw new Error("Category not found or unauthorized");
+    }
+
+    await ctx.db.patch(args.id, {
+      name: args.name,
+      color: args.color,
+      icon: args.icon,
+    });
+  },
+});
+
+export const remove = mutation({
+  args: {
+    id: v.id("categories"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const category = await ctx.db.get(args.id);
+    if (!category || category.userId !== userId) {
+      throw new Error("Category not found or unauthorized");
+    }
+
+    // Note: We might want to handle transactions that use this category.
+    // For now, they will just have a null category reference in enriched results.
+    await ctx.db.delete(args.id);
   },
 });

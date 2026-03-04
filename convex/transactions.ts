@@ -4,7 +4,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const list = query({
   args: {
-    accountId: v.optional(v.id("accounts")),
+    accountId: v.optional(v.id("bankAccounts")),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -49,14 +49,15 @@ export const list = query({
 
 export const create = mutation({
   args: {
-    accountId: v.id("accounts"),
+    accountId: v.id("bankAccounts"),
     categoryId: v.optional(v.id("categories")),
     title: v.string(),
     amount: v.number(),
     type: v.union(v.literal("income"), v.literal("expense"), v.literal("transfer")),
     date: v.string(),
     notes: v.optional(v.string()),
-    transferToAccountId: v.optional(v.id("accounts")),
+    transferToAccountId: v.optional(v.id("bankAccounts")),
+    isRecurring: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -79,6 +80,7 @@ export const create = mutation({
       date: args.date,
       notes: args.notes,
       transferToAccountId: args.transferToAccountId,
+      isRecurring: args.isRecurring,
     });
 
     // Update account balances
@@ -157,6 +159,122 @@ export const getMonthlyStats = query({
       expenses,
       net: income - expenses,
     };
+  },
+});
+
+export const remove = mutation({
+  args: { id: v.id("transactions") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const transaction = await ctx.db.get(args.id);
+    if (!transaction || transaction.userId !== userId) {
+      throw new Error("Transaction not found or unauthorized");
+    }
+
+    // 1. Reverse account balance impact
+    const account = await ctx.db.get(transaction.accountId);
+    if (account) {
+      if (transaction.type === "income") {
+        await ctx.db.patch(transaction.accountId, { balance: account.balance - transaction.amount });
+      } else if (transaction.type === "expense") {
+        await ctx.db.patch(transaction.accountId, { balance: account.balance + transaction.amount });
+      } else if (transaction.type === "transfer" && transaction.transferToAccountId) {
+        const toAccount = await ctx.db.get(transaction.transferToAccountId);
+        await ctx.db.patch(transaction.accountId, { balance: account.balance + transaction.amount });
+        if (toAccount) {
+          await ctx.db.patch(transaction.transferToAccountId, { balance: toAccount.balance - transaction.amount });
+        }
+      }
+    }
+
+    // 2. Reverse budget impact (if expense)
+    if (transaction.type === "expense" && transaction.categoryId) {
+      const month = transaction.date.substring(0, 7);
+      const budget = await ctx.db
+        .query("budgets")
+        .withIndex("by_user_month", (q) => q.eq("userId", userId).eq("month", month))
+        .filter((q) => q.eq(q.field("categoryId"), transaction.categoryId))
+        .first();
+
+      if (budget) {
+        await ctx.db.patch(budget._id, { spent: Math.max(0, budget.spent - transaction.amount) });
+      }
+    }
+
+    await ctx.db.delete(args.id);
+  },
+});
+
+export const update = mutation({
+  args: {
+    id: v.id("transactions"),
+    accountId: v.id("bankAccounts"),
+    categoryId: v.optional(v.id("categories")),
+    title: v.string(),
+    amount: v.number(),
+    type: v.union(v.literal("income"), v.literal("expense"), v.literal("transfer")),
+    date: v.string(),
+    notes: v.optional(v.string()),
+    transferToAccountId: v.optional(v.id("bankAccounts")),
+    isRecurring: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const oldTransaction = await ctx.db.get(args.id);
+    if (!oldTransaction || oldTransaction.userId !== userId) throw new Error("Unauthorized");
+
+    // To keep it simple and robust: reverse old impacts, then apply new ones
+    // (Wait, we can just call an internal removal logic, but for safety let's do it manually here)
+    
+    // Reverse OLD impacts
+    const oldAccount = await ctx.db.get(oldTransaction.accountId);
+    if (oldAccount) {
+      if (oldTransaction.type === "income") await ctx.db.patch(oldTransaction.accountId, { balance: oldAccount.balance - oldTransaction.amount });
+      else if (oldTransaction.type === "expense") await ctx.db.patch(oldTransaction.accountId, { balance: oldAccount.balance + oldTransaction.amount });
+      else if (oldTransaction.type === "transfer" && oldTransaction.transferToAccountId) {
+        const toAccount = await ctx.db.get(oldTransaction.transferToAccountId);
+        await ctx.db.patch(oldTransaction.accountId, { balance: oldAccount.balance + oldTransaction.amount });
+        if (toAccount) await ctx.db.patch(oldTransaction.transferToAccountId, { balance: toAccount.balance - oldTransaction.amount });
+      }
+    }
+    if (oldTransaction.type === "expense" && oldTransaction.categoryId) {
+      const oldMonth = oldTransaction.date.substring(0, 7);
+      const oldBudget = await ctx.db.query("budgets").withIndex("by_user_month", (q) => q.eq("userId", userId).eq("month", oldMonth)).filter((q) => q.eq(q.field("categoryId"), oldTransaction.categoryId)).first();
+      if (oldBudget) await ctx.db.patch(oldBudget._id, { spent: Math.max(0, oldBudget.spent - oldTransaction.amount) });
+    }
+
+    // Apply NEW impacts
+    const newAccount = await ctx.db.get(args.accountId);
+    if (newAccount) {
+      if (args.type === "income") await ctx.db.patch(args.accountId, { balance: newAccount.balance + args.amount });
+      else if (args.type === "expense") await ctx.db.patch(args.accountId, { balance: newAccount.balance - args.amount });
+      else if (args.type === "transfer" && args.transferToAccountId) {
+        const toAccount = await ctx.db.get(args.transferToAccountId);
+        await ctx.db.patch(args.accountId, { balance: newAccount.balance - args.amount });
+        if (toAccount) await ctx.db.patch(args.transferToAccountId, { balance: toAccount.balance + args.amount });
+      }
+    }
+    if (args.type === "expense" && args.categoryId) {
+      const newMonth = args.date.substring(0, 7);
+      const newBudget = await ctx.db.query("budgets").withIndex("by_user_month", (q) => q.eq("userId", userId).eq("month", newMonth)).filter((q) => q.eq(q.field("categoryId"), args.categoryId)).first();
+      if (newBudget) await ctx.db.patch(newBudget._id, { spent: newBudget.spent + args.amount });
+    }
+
+    await ctx.db.patch(args.id, {
+      accountId: args.accountId,
+      categoryId: args.categoryId,
+      title: args.title,
+      amount: args.amount,
+      type: args.type,
+      date: args.date,
+      notes: args.notes,
+      transferToAccountId: args.transferToAccountId,
+      isRecurring: args.isRecurring,
+    });
   },
 });
 

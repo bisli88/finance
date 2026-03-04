@@ -34,10 +34,33 @@ body {
 
 /* only use this to update the style of the auth input fields. use a different class for all other input fields */
 .auth-input-field {
-  @apply w-full px-4 py-3 rounded-container bg-white border border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow shadow-sm hover:shadow;
+  @apply w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-black focus:ring-4 focus:ring-black/5 outline-none transition-all shadow-sm hover:border-slate-300 placeholder:text-slate-400 font-medium text-sm;
 }
 
 /* only use this to update the style of the auth buttons. use the button class for all other buttons */
 .auth-button {
-  @apply w-full px-4 py-3 rounded bg-primary text-white font-semibold hover:bg-primary-hover transition-colors shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply w-full px-5 py-3.5 rounded-2xl bg-black text-white font-bold hover:bg-slate-800 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm active:scale-[0.98];
+}
+
+/* Hide arrows in number inputs */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Privacy Blur Logic */
+.blur-amount {
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+.privacy-active .blur-amount {
+  filter: blur(8px);
+  user-select: none;
+  pointer-events: none;
+  opacity: 0.6;
 }

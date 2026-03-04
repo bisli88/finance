@@ -47,10 +47,30 @@ export const create = mutation({
       .filter((q) => q.eq(q.field("categoryId"), args.categoryId))
       .first();
 
+    // Calculate current spent amount from existing transactions
+    const startDate = `${args.month}-01`;
+    const endDate = `${args.month}-31`;
+    const transactions = await ctx.db
+      .query("transactions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("categoryId"), args.categoryId),
+          q.eq(q.field("type"), "expense"),
+          q.gte(q.field("date"), startDate),
+          q.lte(q.field("date"), endDate)
+        )
+      )
+      .collect();
+
+    const currentSpent = transactions.reduce((sum, t) => sum + t.amount, 0);
+    const roundedAmount = Math.round(args.amount * 100) / 100;
+
     if (existing) {
       // Update existing budget
       await ctx.db.patch(existing._id, {
-        amount: args.amount,
+        amount: roundedAmount,
+        spent: currentSpent,
       });
       return existing._id;
     } else {
@@ -58,30 +78,49 @@ export const create = mutation({
       return await ctx.db.insert("budgets", {
         userId,
         categoryId: args.categoryId,
-        amount: args.amount,
+        amount: roundedAmount,
         month: args.month,
-        spent: 0,
+        spent: currentSpent,
       });
     }
   },
 });
 
-export const updateSpent = mutation({
+export const remove = mutation({
   args: {
-    budgetId: v.id("budgets"),
+    id: v.id("budgets"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const budget = await ctx.db.get(args.id);
+    if (!budget || budget.userId !== userId) {
+      throw new Error("Budget not found or unauthorized");
+    }
+
+    await ctx.db.delete(args.id);
+  },
+});
+
+export const updateAmount = mutation({
+  args: {
+    id: v.id("budgets"),
     amount: v.number(),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    const budget = await ctx.db.get(args.budgetId);
+    const budget = await ctx.db.get(args.id);
     if (!budget || budget.userId !== userId) {
-      throw new Error("Budget not found");
+      throw new Error("Budget not found or unauthorized");
     }
 
-    await ctx.db.patch(args.budgetId, {
-      spent: budget.spent + args.amount,
+    const roundedAmount = Math.round(args.amount * 100) / 100;
+
+    await ctx.db.patch(args.id, {
+      amount: roundedAmount,
     });
   },
 });
