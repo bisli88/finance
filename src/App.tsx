@@ -266,7 +266,11 @@ function Content() {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               const isBeingTargeted = isDragging && dragTargetTab === tab.id;
-              const showAsActive = (!isDragging && isActive) || isBeingTargeted;
+              
+              // Only show the expanded "pill" state when NOT dragging
+              const showAsExpanded = !isDragging && isActive;
+              // Icon should be bright if it's the active tab (when not dragging) OR the target of a drag
+              const isIconActive = showAsExpanded || isBeingTargeted;
               
               return (
                 <button
@@ -275,17 +279,17 @@ function Content() {
                   onTouchStart={(e) => handleTouchStart(e, tab.id)}
                   className={`
                     relative flex items-center justify-center transition-all duration-500 ease-out z-10
-                    ${showAsActive ? "flex-[2] bg-white/15 rounded-full h-[48px] mx-1" : "flex-1 h-[48px]"}
+                    ${showAsExpanded ? "flex-[2] bg-white/15 rounded-full h-[48px] mx-1" : "flex-1 h-[48px]"}
                   `}
                 >
-                  <div className={`flex items-center justify-center gap-2 ${showAsActive ? "px-3" : ""}`}>
+                  <div className={`flex items-center justify-center gap-2 ${showAsExpanded ? "px-3" : ""}`}>
                     <Icon 
-                      size={showAsActive ? 20 : 24} 
-                      className={`transition-all duration-300 ${showAsActive ? "text-white" : "text-white/40"}`}
-                      strokeWidth={showAsActive ? 2.5 : 2}
+                      size={showAsExpanded ? 20 : 24} 
+                      className={`transition-all duration-300 ${isIconActive ? "text-white" : "text-white/40"}`}
+                      strokeWidth={isIconActive ? 2.5 : 2}
                     />
                     
-                    {showAsActive && (
+                    {showAsExpanded && (
                       <span className="text-xs font-black text-white whitespace-nowrap animate-in fade-in zoom-in duration-300">
                         {tab.label}
                       </span>
