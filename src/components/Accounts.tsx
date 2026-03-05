@@ -84,7 +84,10 @@ export function Accounts() {
   return (
     <div className="space-y-6">
       {showForm && (
-        <div className="bg-slate-50 rounded-3xl border border-slate-200 p-6 md:p-8 animate-in fade-in zoom-in duration-300 mb-6">
+        <div 
+          data-tour="account-form"
+          className="bg-slate-50 rounded-3xl border border-slate-200 p-6 md:p-8 animate-in fade-in zoom-in duration-300 mb-6"
+        >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white rounded-xl shadow-sm">
@@ -193,6 +196,7 @@ export function Accounts() {
 
         {!showForm && (
           <button 
+            data-tour="add-account-btn"
             onClick={() => { resetForm(); setShowForm(true); }}
             className="flex items-center justify-center py-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl hover:bg-slate-100 hover:border-slate-300 transition-all group gap-3"
           >

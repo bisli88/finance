@@ -453,6 +453,34 @@ export function Settings() {
         </div>
       </div>
 
+      {/* Tour Section */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+          <div className="p-2 bg-white rounded-xl shadow-sm">
+            <Info size={20} className="text-slate-700" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900">הדרכה וסיור</h3>
+        </div>
+        <div className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1">
+            <h4 className="font-bold text-slate-900">סיור באפליקציה</h4>
+            <p className="text-sm text-slate-500">
+              רוצה לרענן את הזיכרון? תוכל להפעיל מחדש את הסיור המודרך באפליקציה.
+            </p>
+          </div>
+          <button 
+            onClick={() => {
+              localStorage.removeItem('hasCompletedTour');
+              window.location.reload();
+            }}
+            className="px-6 py-3 bg-slate-900 hover:bg-black text-white rounded-2xl transition-all font-bold text-sm shadow-lg shadow-slate-200 flex items-center gap-2 justify-center"
+          >
+            <Palette size={18} />
+            הפעל סיור מודרך
+          </button>
+        </div>
+      </div>
+
       {/* Logout Section */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">

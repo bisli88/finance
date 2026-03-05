@@ -47,7 +47,10 @@ export function Dashboard({ onNavigate }: { onNavigate?: (tab: string) => void }
   return (
     <div className="space-y-12">
       {/* 1. Hero Balance Card */}
-      <div className="bg-[#020617] rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden group border border-slate-800 flex flex-col items-center justify-center text-center">
+      <div 
+        data-tour="balance-card"
+        className="bg-[#020617] rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden group border border-slate-800 flex flex-col items-center justify-center text-center"
+      >
         {/* Decorative Background Elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[100px] -mr-32 -mt-32 transition-all group-hover:bg-blue-500/20"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-slate-500/10 rounded-full blur-[100px] -ml-32 -mb-32 transition-all group-hover:bg-slate-500/20"></div>
@@ -66,6 +69,7 @@ export function Dashboard({ onNavigate }: { onNavigate?: (tab: string) => void }
           </div>
 
           <button 
+            data-tour="privacy-toggle"
             onClick={(e) => { e.stopPropagation(); togglePrivacy(); }}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all text-slate-400 hover:text-white text-xs font-bold mt-4"
           >
@@ -78,8 +82,8 @@ export function Dashboard({ onNavigate }: { onNavigate?: (tab: string) => void }
       {/* 1b. Remaining Budget Section */}
       <div className="space-y-6">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-sm md:text-base font-bold text-slate-900 flex items-center gap-2 whitespace-nowrap">
-            <Target size={16} className="text-blue-600 flex-shrink-0" />
+          <h3 className="text-sm md:text-base font-bold text-white flex items-center gap-2 whitespace-nowrap">
+            <Target size={16} className="text-white flex-shrink-0" />
             תקציב שנותר החודש
           </h3>
           <button 
@@ -99,8 +103,8 @@ export function Dashboard({ onNavigate }: { onNavigate?: (tab: string) => void }
       {/* 1c. Debt Overview */}
       <div className="space-y-6">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-sm md:text-base font-bold text-slate-900 flex items-center gap-2 whitespace-nowrap">
-            <Banknote size={16} className="text-blue-600 flex-shrink-0" />
+          <h3 className="text-sm md:text-base font-bold text-white flex items-center gap-2 whitespace-nowrap">
+            <Banknote size={16} className="text-white flex-shrink-0" />
             חובות פעילים
           </h3>
           <button 
@@ -147,8 +151,8 @@ export function Dashboard({ onNavigate }: { onNavigate?: (tab: string) => void }
         {/* 2. Recent Transactions Summary */}
         <div className="lg:col-span-12 space-y-6">
           <div className="flex items-center justify-between px-2">
-            <h3 className="text-sm md:text-base font-bold text-slate-900 flex items-center gap-2 whitespace-nowrap">
-              <ArrowRightLeft size={16} className="text-blue-600 flex-shrink-0" />
+            <h3 className="text-sm md:text-base font-bold text-white flex items-center gap-2 whitespace-nowrap">
+              <ArrowRightLeft size={16} className="text-white flex-shrink-0" />
               תנועות אחרונות
             </h3>
             <button 

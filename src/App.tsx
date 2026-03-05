@@ -10,6 +10,7 @@ import { Transactions } from "./components/Transactions";
 import { Debts } from "./components/Debts";
 import { Settings } from "./components/Settings";
 import { Analytics } from "./components/Analytics";
+import { AppTour } from "./components/AppTour";
 import { useMutation } from "convex/react";
 import { 
   Home as HomeIcon, 
@@ -35,7 +36,7 @@ export default function App() {
 
   return (
     <PrivacyContext.Provider value={{ isPrivate, togglePrivacy }}>
-      <div className={`min-h-screen flex flex-col bg-[#f8fafc] pb-20 md:pb-0 font-sans text-slate-900 ${isPrivate ? 'privacy-active' : ''}`}>
+      <div className={`min-h-screen flex flex-col bg-gradient-to-br from-purple-400 via-indigo-500 to-blue-500 pb-20 md:pb-0 font-sans text-slate-900 ${isPrivate ? 'privacy-active' : ''}`}>
         <main className="flex-1">
           <Content />
         </main>
@@ -62,11 +63,11 @@ function Content() {
   const blockClicksRef = useRef(false);
 
   const tabs = [
-    { id: "home", label: "בית", icon: HomeIcon },
-    { id: "analytics", label: "ניתוח", icon: BarChart3 },
-    { id: "transactions", label: "תנועות", icon: ArrowRightLeft },
-    { id: "debts", label: "חובות", icon: Banknote },
-    { id: "settings", label: "הגדרות", icon: SettingsIcon },
+    { id: "home", label: "בית", icon: HomeIcon, tourId: "nav-home" },
+    { id: "analytics", label: "ניתוח", icon: BarChart3, tourId: "nav-analytics" },
+    { id: "transactions", label: "תנועות", icon: ArrowRightLeft, tourId: "nav-transactions" },
+    { id: "debts", label: "חובות", icon: Banknote, tourId: "nav-debts" },
+    { id: "settings", label: "הגדרות", icon: SettingsIcon, tourId: "nav-settings" },
   ];
 
   const handleTouchStart = (e: React.TouchEvent, tabId: string) => {
@@ -195,6 +196,7 @@ function Content() {
   return (
     <div className="flex flex-col">
       <Authenticated>
+        <AppTour onNavigate={setActiveTab} activeTab={activeTab} />
         {/* Desktop Navigation */}
         <div className="hidden md:block bg-white border-b border-slate-200 sticky top-0 z-30">
           <div className="max-w-7xl mx-auto px-6">
@@ -211,6 +213,7 @@ function Content() {
                   return (
                     <button
                       key={tab.id}
+                      data-tour={tab.tourId}
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex items-center gap-2 py-5 px-4 border-b-2 font-medium text-sm transition-all duration-200 ${
                         activeTab === tab.id
@@ -235,7 +238,7 @@ function Content() {
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
                 {tabs.find(t => t.id === activeTab)?.label}
               </h1>
-              <p className="text-slate-500 mt-1">
+              <p className="text-white/90 mt-1 font-medium">
                 {activeTab === "analytics" && "ניתוח מעמיק של ההכנסות וההוצאות שלך"}
                 {activeTab === "transactions" && "עקוב אחר כל ההכנסות וההוצאות שלך"}
                 {activeTab === "debts" && "נהל את החובות שלך ומעקב אחר תשלומים"}
@@ -291,6 +294,7 @@ function Content() {
               return (
                 <button
                   key={tab.id}
+                  data-tour={tab.tourId}
                   onClick={() => handleTabClick(tab.id)}
                   onTouchStart={(e) => handleTouchStart(e, tab.id)}
                   className={`

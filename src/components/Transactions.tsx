@@ -8,6 +8,7 @@ import {
   Plus, 
   ArrowUpCircle, 
   ArrowDownCircle, 
+  ArrowRightLeft,
   RefreshCw, 
   Search, 
   Filter, 
@@ -160,6 +161,7 @@ export function Transactions() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 w-full max-w-4xl mx-auto px-2">
         <button
+          data-tour="add-transaction-btn"
           onClick={() => { resetForm(); setShowForm(true); }}
           className="w-full bg-black text-white px-6 py-4 rounded-2xl hover:bg-slate-800 transition-all flex items-center justify-center gap-3 text-base font-black shadow-lg hover:shadow-xl active:scale-[0.98]"
         >
@@ -259,7 +261,10 @@ export function Transactions() {
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl p-6 md:p-12 animate-in fade-in zoom-in duration-500 max-w-2xl mx-auto w-full mb-12 relative overflow-hidden">
+        <div 
+          data-tour="transaction-form"
+          className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl p-6 md:p-12 animate-in fade-in zoom-in duration-500 max-w-2xl mx-auto w-full mb-12 relative overflow-hidden"
+        >
           <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[5rem] -z-10 opacity-50"></div>
           
           <div className="flex items-center justify-between mb-10">
@@ -495,87 +500,72 @@ export function Transactions() {
                 <div className="h-px bg-slate-100 flex-1"></div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
-                {dateTransactions.map((transaction: any) => {
-                  const Icon = transaction.type === "income" ? ArrowUpCircle : 
-                              transaction.type === "expense" ? ArrowDownCircle : RefreshCw;
-                  const iconColor = transaction.type === "income" ? "text-green-600 bg-green-50" : 
-                                   transaction.type === "expense" ? "text-red-600 bg-red-50" : "text-blue-600 bg-blue-50";
-                  
-                  return (
-                    <div key={transaction._id} className="group bg-white rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 p-1.5 md:p-2">
-                      <div className="flex items-center gap-2">
-                        
-                        <div className="flex items-center gap-2 min-w-0 flex-[2.5]">
-                          <div className={`p-1.5 rounded-md ${iconColor} flex-shrink-0 shadow-sm`}>
-                            {transaction.category?.icon && transaction.type !== 'transfer' ? (
-                              <DynamicIcon name={transaction.category.icon} size={14} strokeWidth={2.5} />
-                            ) : (
-                              <Icon size={14} strokeWidth={2.5} />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-bold text-slate-900 leading-tight text-[11px] md:text-xs whitespace-nowrap overflow-hidden text-ellipsis">
-                              {transaction.title}
-                            </p>
-                            <div className="flex items-center gap-1.5 mt-0.5 whitespace-nowrap overflow-hidden">
-                              <span className="text-[9px] font-bold text-slate-400 flex items-center gap-0.5">
-                                <Wallet size={8} strokeWidth={2.5} />
-                                {transaction.account?.name}
-                              </span>
-                              {transaction.category && (
-                                <>
-                                  <span className="text-[8px] text-slate-300 mx-0.5">•</span>
-                                  <span className="text-[9px] font-medium text-slate-400">
-                                    {transaction.category.name}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex-shrink-0 flex justify-center px-1">
-                          {transaction.isRecurring && (
-                            <div className="flex items-center gap-0.5 text-[8px] font-black text-slate-400 bg-slate-50 px-1.5 py-0 rounded-full border border-slate-100">
-                              <Repeat size={8} strokeWidth={3} />
-                              <span className="hidden sm:inline uppercase tracking-tighter">קבוע</span>
-                            </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {dateTransactions.map((transaction: any) => (
+                  <div 
+                    key={transaction._id} 
+                    className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:border-blue-100 transition-all group relative"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div 
+                        className="p-3 rounded-xl flex-shrink-0 transition-transform group-hover:scale-110"
+                        style={{ 
+                          backgroundColor: transaction.category?.color ? `${transaction.category.color}15` : '#f1f5f9',
+                          color: transaction.category?.color || '#64748b'
+                        }}
+                      >
+                        {transaction.category?.icon ? <DynamicIcon name={transaction.category.icon} size={20} /> : <ArrowRightLeft size={20} />}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 text-sm">{transaction.title}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                          {transaction.account?.name}
+                          {transaction.category && (
+                            <>
+                              <span className="text-slate-300">•</span>
+                              <span className="text-slate-500 font-medium lowercase tracking-normal">{transaction.category.name}</span>
+                            </>
                           )}
-                        </div>
-
-                        <div className="flex items-center gap-1.5 flex-shrink-0 justify-end ml-0.5">
-                          <div className="text-left">
-                            <p className={`text-[11px] md:text-sm font-black tracking-tight blur-amount ${
-                              transaction.type === "income" ? "text-green-600" : 
-                              transaction.type === "expense" ? "text-red-600" : "text-blue-600"
-                            }`}>
-                              {transaction.type === "income" ? "+" : transaction.type === "expense" ? "-" : ""}
-                              ₪{transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleDelete(transaction._id); }}
-                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-                              title="מחק"
-                            >
-                              <Trash2 size={11} />
-                            </button>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleEdit(transaction); }}
-                              className="p-1 text-slate-400 hover:text-black hover:bg-slate-50 rounded transition-all"
-                              title="ערוך"
-                            >
-                              <Edit2 size={11} />
-                            </button>
-                          </div>
-                        </div>
-
+                          {transaction.isRecurring && (
+                            <>
+                              <span className="text-slate-300">•</span>
+                              <span className="text-indigo-500">קבוע</span>
+                            </>
+                          )}
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
+
+                    <div className="flex items-center gap-4">
+                      <div className="text-left">
+                        <p className={`font-black text-sm blur-amount ${transaction.type === 'income' ? 'text-emerald-600' : transaction.type === 'expense' ? 'text-rose-600' : 'text-blue-600'}`}>
+                          {transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '-' : ''}
+                          ₪{transaction.amount.toLocaleString()}
+                        </p>
+                        <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter text-left">
+                          {transaction.type === 'income' ? 'הכנסה' : 'הוצאה'}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleEdit(transaction); }}
+                          className="p-1.5 text-slate-300 hover:text-black hover:bg-slate-50 rounded-lg transition-all"
+                          title="ערוך"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleDelete(transaction._id); }}
+                          className="p-1.5 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                          title="מחק"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))
