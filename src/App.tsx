@@ -54,7 +54,9 @@ function Content() {
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
   const [dragX, setDragX] = useState(0);
+  const dragXRef = useRef(0);
   const [dragTargetTab, setDragTargetTab] = useState<string | null>(null);
+  const dragTargetTabRef = useRef<string | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<any>(null);
   const touchStartPos = useRef({ x: 0, y: 0 });
@@ -78,7 +80,9 @@ function Content() {
       isDraggingRef.current = true;
       if (navRef.current) {
         const rect = navRef.current.getBoundingClientRect();
-        setDragX(touch.clientX - rect.left);
+        const x = touch.clientX - rect.left;
+        setDragX(x);
+        dragXRef.current = x;
       }
       if ('vibrate' in navigator) navigator.vibrate(50);
     }, 400); // 400ms for long press
@@ -88,13 +92,12 @@ function Content() {
     const touch = e.touches[0];
     
     if (!isDraggingRef.current) {
-      // If we move too much before the long press fires, cancel it
       const dist = Math.sqrt(
         Math.pow(touch.clientX - touchStartPos.current.x, 2) + 
         Math.pow(touch.clientY - touchStartPos.current.y, 2)
       );
       
-      if (dist > 10) { // 10px threshold
+      if (dist > 15) {
         if (longPressTimer.current) {
           clearTimeout(longPressTimer.current);
           longPressTimer.current = null;
@@ -108,20 +111,26 @@ function Content() {
     const rect = navRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(touch.clientX - rect.left, rect.width));
     setDragX(x);
+    dragXRef.current = x;
 
     // Calculate target tab index
     const tabWidth = rect.width / tabs.length;
     const index = Math.floor(x / tabWidth);
     if (index >= 0 && index < tabs.length) {
-      setDragTargetTab(tabs[index].id);
+      const targetId = tabs[index].id;
+      setDragTargetTab(targetId);
+      dragTargetTabRef.current = targetId;
     }
   };
 
   const handleTouchEnd = () => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
     
-    if (isDraggingRef.current && dragTargetTab) {
-      setActiveTab(dragTargetTab);
+    if (isDraggingRef.current && dragTargetTabRef.current) {
+      setActiveTab(dragTargetTabRef.current);
     }
     
     // Small delay to prevent the click event from seeing isDragging as false
@@ -129,6 +138,7 @@ function Content() {
       setIsDragging(false);
       isDraggingRef.current = false;
       setDragTargetTab(null);
+      dragTargetTabRef.current = null;
     }, 50);
   };
 
