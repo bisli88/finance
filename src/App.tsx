@@ -146,15 +146,23 @@ function Content() {
         setActiveTab(dragTargetTabRef.current);
       }
       if (e.cancelable) e.preventDefault();
-    }
-
-    // Small delay to prevent the click event from seeing isDragging as false
-    setTimeout(() => {
+      
+      // Clear visual dragging state IMMEDIATELY to hide the bubble
+      setIsDragging(false);
+      setDragTargetTab(null);
+      
+      // Keep the ref true for a tiny bit longer just to block the trailing click
+      setTimeout(() => {
+        isDraggingRef.current = false;
+        dragTargetTabRef.current = null;
+      }, 100);
+    } else {
+      // Normal tap - clear everything
       setIsDragging(false);
       isDraggingRef.current = false;
       setDragTargetTab(null);
       dragTargetTabRef.current = null;
-    }, 50);
+    }
   };
   useEffect(() => {
     window.scrollTo(0, 0);
