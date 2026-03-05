@@ -78,14 +78,13 @@ function Content() {
     longPressTimer.current = setTimeout(() => {
       setIsDragging(true);
       isDraggingRef.current = true;
-      
       if (navRef.current) {
         const rect = navRef.current.getBoundingClientRect();
         const x = touch.clientX - rect.left;
         setDragX(x);
         dragXRef.current = x;
         
-        // Initialize target tab immediately on long press
+        // Initialize target immediately
         const tabWidth = rect.width / tabs.length;
         const visualIndexFromLeft = Math.floor(x / tabWidth);
         const logicalIndex = tabs.length - 1 - visualIndexFromLeft;
@@ -146,6 +145,8 @@ function Content() {
       setActiveTab(dragTargetTabRef.current);
     }
     
+    // Small delay to prevent the click event from seeing isDragging as false
+    // but clear targeted states immediately to hide bubble
     setIsDragging(false);
     isDraggingRef.current = false;
     setDragTargetTab(null);
@@ -265,6 +266,7 @@ function Content() {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               const isBeingTargeted = isDragging && dragTargetTab === tab.id;
+              const showAsActive = (!isDragging && isActive) || isBeingTargeted;
               
               return (
                 <button
@@ -273,18 +275,17 @@ function Content() {
                   onTouchStart={(e) => handleTouchStart(e, tab.id)}
                   className={`
                     relative flex items-center justify-center transition-all duration-500 ease-out z-10
-                    ${isActive && !isDragging ? "flex-[2] bg-white/15 rounded-full h-[48px] mx-1" : "flex-1 h-[48px]"}
-                    ${isBeingTargeted ? "scale-110" : ""}
+                    ${showAsActive ? "flex-[2] bg-white/15 rounded-full h-[48px] mx-1" : "flex-1 h-[48px]"}
                   `}
                 >
-                  <div className={`flex items-center justify-center gap-2 ${isActive && !isDragging ? "px-3" : ""}`}>
+                  <div className={`flex items-center justify-center gap-2 ${showAsActive ? "px-3" : ""}`}>
                     <Icon 
-                      size={(isActive && !isDragging) || isBeingTargeted ? 20 : 24} 
-                      className={`transition-all duration-300 ${isActive || isBeingTargeted ? "text-white" : "text-white/40"}`}
-                      strokeWidth={isActive || isBeingTargeted ? 2.5 : 2}
+                      size={showAsActive ? 20 : 24} 
+                      className={`transition-all duration-300 ${showAsActive ? "text-white" : "text-white/40"}`}
+                      strokeWidth={showAsActive ? 2.5 : 2}
                     />
                     
-                    {isActive && !isDragging && (
+                    {showAsActive && (
                       <span className="text-xs font-black text-white whitespace-nowrap animate-in fade-in zoom-in duration-300">
                         {tab.label}
                       </span>
