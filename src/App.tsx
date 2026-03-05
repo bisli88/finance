@@ -223,7 +223,7 @@ function Content() {
             ref={navRef}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            className="relative flex justify-around items-center h-[64px] bg-black shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-xl rounded-[2rem] px-1.5 border border-white/10 touch-none"
+            className="relative flex justify-around items-center h-[64px] bg-black shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-xl rounded-[2rem] px-1.5 border border-white/10 touch-none select-none"
           >
             {/* Animated Drag Bubble */}
             {isDragging && (
