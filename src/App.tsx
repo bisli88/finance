@@ -78,11 +78,22 @@ function Content() {
     longPressTimer.current = setTimeout(() => {
       setIsDragging(true);
       isDraggingRef.current = true;
+      
       if (navRef.current) {
         const rect = navRef.current.getBoundingClientRect();
         const x = touch.clientX - rect.left;
         setDragX(x);
         dragXRef.current = x;
+        
+        // Initialize target tab immediately on long press
+        const tabWidth = rect.width / tabs.length;
+        const visualIndexFromLeft = Math.floor(x / tabWidth);
+        const logicalIndex = tabs.length - 1 - visualIndexFromLeft;
+        if (logicalIndex >= 0 && logicalIndex < tabs.length) {
+          const targetId = tabs[logicalIndex].id;
+          setDragTargetTab(targetId);
+          dragTargetTabRef.current = targetId;
+        }
       }
       if ('vibrate' in navigator) navigator.vibrate(50);
     }, 400); // 400ms for long press
@@ -135,13 +146,10 @@ function Content() {
       setActiveTab(dragTargetTabRef.current);
     }
     
-    // Small delay to prevent the click event from seeing isDragging as false
-    setTimeout(() => {
-      setIsDragging(false);
-      isDraggingRef.current = false;
-      setDragTargetTab(null);
-      dragTargetTabRef.current = null;
-    }, 50);
+    setIsDragging(false);
+    isDraggingRef.current = false;
+    setDragTargetTab(null);
+    dragTargetTabRef.current = null;
   };
 
   useEffect(() => {
