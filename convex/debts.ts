@@ -77,7 +77,7 @@ export const create = mutation({
       creationTransactionId = await ctx.db.insert("transactions", {
         userId,
         accountId: args.accountId,
-        title: `הלוואה ל: ${args.personName}`,
+        title: `הלוואה ל${args.personName}`,
         amount: args.totalAmount,
         type: "expense",
         date: args.createdDate,
@@ -231,7 +231,7 @@ export const recordPayment = mutation({
         userId,
         accountId: args.accountId,
         categoryId: args.categoryId,
-        title: `תשלום חוב: ${debt.personName}`,
+        title: `תשלום חוב ל${debt.personName}`,
         amount: args.amount,
         type,
         date: args.date,

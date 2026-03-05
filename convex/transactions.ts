@@ -144,7 +144,7 @@ export const getMonthlyStats = query({
         q.and(
           q.gte(q.field("date"), startDate),
           q.lte(q.field("date"), endDate),
-          q.neq(q.field("isDebt"), true)
+          q.not(q.eq(q.field("isDebt"), true))
         )
       )
       .collect();
@@ -302,7 +302,7 @@ export const getCategoryBreakdown = query({
           q.gte(q.field("date"), startDate),
           q.lte(q.field("date"), endDate),
           q.eq(q.field("type"), "expense"),
-          q.neq(q.field("isDebt"), true)
+          q.not(q.eq(q.field("isDebt"), true))
         )
       )
       .collect();

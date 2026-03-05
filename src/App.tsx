@@ -3,7 +3,7 @@ import { api } from "../convex/_generated/api";
 import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext, useRef } from "react";
 import { Dashboard } from "./components/Dashboard";
 import { Accounts } from "./components/Accounts";
 import { Transactions } from "./components/Transactions";
@@ -50,6 +50,88 @@ function Content() {
   const [activeTab, setActiveTab] = useState("home");
   const createDefaults = useMutation(api.categories.createDefaults);
 
+  // Drag-to-switch states
+  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
+  const [dragX, setDragX] = useState(0);
+  const [dragTargetTab, setDragTargetTab] = useState<string | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<any>(null);
+  const touchStartPos = useRef({ x: 0, y: 0 });
+
+  const tabs = [
+    { id: "home", label: "בית", icon: HomeIcon },
+    { id: "analytics", label: "ניתוח", icon: BarChart3 },
+    { id: "transactions", label: "תנועות", icon: ArrowRightLeft },
+    { id: "debts", label: "חובות", icon: Banknote },
+    { id: "settings", label: "הגדרות", icon: SettingsIcon },
+  ];
+
+  const handleTouchStart = (e: React.TouchEvent, tabId: string) => {
+    if (tabId !== activeTab) return;
+    
+    const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+    
+    longPressTimer.current = setTimeout(() => {
+      setIsDragging(true);
+      isDraggingRef.current = true;
+      if (navRef.current) {
+        const rect = navRef.current.getBoundingClientRect();
+        setDragX(touch.clientX - rect.left);
+      }
+      if ('vibrate' in navigator) navigator.vibrate(50);
+    }, 400); // 400ms for long press
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    
+    if (!isDraggingRef.current) {
+      // If we move too much before the long press fires, cancel it
+      const dist = Math.sqrt(
+        Math.pow(touch.clientX - touchStartPos.current.x, 2) + 
+        Math.pow(touch.clientY - touchStartPos.current.y, 2)
+      );
+      
+      if (dist > 10) { // 10px threshold
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+        }
+      }
+      return;
+    }
+    
+    if (!navRef.current) return;
+    
+    const rect = navRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(touch.clientX - rect.left, rect.width));
+    setDragX(x);
+
+    // Calculate target tab index
+    const tabWidth = rect.width / tabs.length;
+    const index = Math.floor(x / tabWidth);
+    if (index >= 0 && index < tabs.length) {
+      setDragTargetTab(tabs[index].id);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    
+    if (isDraggingRef.current && dragTargetTab) {
+      setActiveTab(dragTargetTab);
+    }
+    
+    // Small delay to prevent the click event from seeing isDragging as false
+    setTimeout(() => {
+      setIsDragging(false);
+      isDraggingRef.current = false;
+      setDragTargetTab(null);
+    }, 50);
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [activeTab]);
@@ -73,14 +155,6 @@ function Content() {
       </div>
     );
   }
-
-  const tabs = [
-    { id: "home", label: "בית", icon: HomeIcon },
-    { id: "analytics", label: "ניתוח", icon: BarChart3 },
-    { id: "transactions", label: "תנועות", icon: ArrowRightLeft },
-    { id: "debts", label: "חובות", icon: Banknote },
-    { id: "settings", label: "הגדרות", icon: SettingsIcon },
-  ];
 
   return (
     <div className="flex flex-col">
@@ -145,38 +219,55 @@ function Content() {
 
         {/* Mobile Bottom Navigation - Perfect Modern Design */}
         <div className="md:hidden fixed bottom-6 left-4 right-4 z-50">
-          <nav className="flex justify-around items-center h-[64px] bg-black shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-xl rounded-[2rem] px-1.5 border border-white/10">
+          <nav 
+            ref={navRef}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            className="relative flex justify-around items-center h-[64px] bg-black shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-xl rounded-[2rem] px-1.5 border border-white/10 touch-none"
+          >
+            {/* Animated Drag Bubble */}
+            {isDragging && (
+              <div 
+                className="absolute bg-white/25 rounded-full transition-all duration-75 ease-out pointer-events-none z-0 shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+                style={{ 
+                  top: '4px',
+                  bottom: '4px',
+                  left: `${(dragX / (navRef.current?.getBoundingClientRect().width || 1)) * 100 - (100/tabs.length/2)}%`,
+                  width: `${100 / tabs.length}%`,
+                  transform: 'scale(1.15)',
+                }}
+              />
+            )}
+
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
+              const isBeingTargeted = isDragging && dragTargetTab === tab.id;
               
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => !isDragging && setActiveTab(tab.id)}
+                  onTouchStart={(e) => handleTouchStart(e, tab.id)}
                   className={`
-                    relative flex items-center justify-center transition-all duration-500 ease-out
-                    ${isActive ? "flex-[2] bg-white/15 rounded-full h-[48px] mx-1" : "flex-1 h-[48px]"}
+                    relative flex items-center justify-center transition-all duration-500 ease-out z-10
+                    ${isActive && !isDragging ? "flex-[2] bg-white/15 rounded-full h-[48px] mx-1" : "flex-1 h-[48px]"}
+                    ${isBeingTargeted ? "scale-110" : ""}
                   `}
                 >
-                  <div className={`flex items-center justify-center gap-2 ${isActive ? "px-3" : ""}`}>
+                  <div className={`flex items-center justify-center gap-2 ${isActive && !isDragging ? "px-3" : ""}`}>
                     <Icon 
-                      size={isActive ? 20 : 24} 
-                      className={`transition-all duration-300 ${isActive ? "text-white" : "text-white/40"}`}
-                      strokeWidth={isActive ? 2.5 : 2}
+                      size={(isActive && !isDragging) || isBeingTargeted ? 20 : 24} 
+                      className={`transition-all duration-300 ${isActive || isBeingTargeted ? "text-white" : "text-white/40"}`}
+                      strokeWidth={isActive || isBeingTargeted ? 2.5 : 2}
                     />
                     
-                    {isActive && (
+                    {isActive && !isDragging && (
                       <span className="text-xs font-black text-white whitespace-nowrap animate-in fade-in zoom-in duration-300">
                         {tab.label}
                       </span>
                     )}
                   </div>
-                  
-                  {/* Active Indicator Dot */}
-                  {isActive && (
-                    <div className="absolute -bottom-1.5 w-1 h-1 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,1)]" />
-                  )}
                 </button>
               );
             })}
