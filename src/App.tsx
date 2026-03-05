@@ -113,11 +113,13 @@ function Content() {
     setDragX(x);
     dragXRef.current = x;
 
-    // Calculate target tab index
+    // Calculate target tab index (Reversed for RTL)
     const tabWidth = rect.width / tabs.length;
-    const index = Math.floor(x / tabWidth);
-    if (index >= 0 && index < tabs.length) {
-      const targetId = tabs[index].id;
+    const visualIndexFromLeft = Math.floor(x / tabWidth);
+    const logicalIndex = tabs.length - 1 - visualIndexFromLeft;
+    
+    if (logicalIndex >= 0 && logicalIndex < tabs.length) {
+      const targetId = tabs[logicalIndex].id;
       setDragTargetTab(targetId);
       dragTargetTabRef.current = targetId;
     }
