@@ -58,6 +58,7 @@ export const create = mutation({
     notes: v.optional(v.string()),
     transferToAccountId: v.optional(v.id("bankAccounts")),
     isRecurring: v.optional(v.boolean()),
+    isDebt: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -81,6 +82,7 @@ export const create = mutation({
       notes: args.notes,
       transferToAccountId: args.transferToAccountId,
       isRecurring: args.isRecurring,
+      isDebt: args.isDebt,
     });
 
     // Update account balances
@@ -104,8 +106,8 @@ export const create = mutation({
       }
     }
 
-    // Update budget spending if it's an expense
-    if (args.type === "expense" && args.categoryId) {
+    // Update budget spending if it's an expense AND not a debt
+    if (args.type === "expense" && args.categoryId && !args.isDebt) {
       const currentMonth = args.date.substring(0, 7); // "2024-01"
       const budget = await ctx.db
         .query("budgets")
@@ -141,7 +143,8 @@ export const getMonthlyStats = query({
       .filter((q) => 
         q.and(
           q.gte(q.field("date"), startDate),
-          q.lte(q.field("date"), endDate)
+          q.lte(q.field("date"), endDate),
+          q.neq(q.field("isDebt"), true)
         )
       )
       .collect();
@@ -189,8 +192,8 @@ export const remove = mutation({
       }
     }
 
-    // 2. Reverse budget impact (if expense)
-    if (transaction.type === "expense" && transaction.categoryId) {
+    // 2. Reverse budget impact (if expense AND not a debt)
+    if (transaction.type === "expense" && transaction.categoryId && !transaction.isDebt) {
       const month = transaction.date.substring(0, 7);
       const budget = await ctx.db
         .query("budgets")
@@ -219,6 +222,7 @@ export const update = mutation({
     notes: v.optional(v.string()),
     transferToAccountId: v.optional(v.id("bankAccounts")),
     isRecurring: v.optional(v.boolean()),
+    isDebt: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -241,7 +245,7 @@ export const update = mutation({
         if (toAccount) await ctx.db.patch(oldTransaction.transferToAccountId, { balance: toAccount.balance - oldTransaction.amount });
       }
     }
-    if (oldTransaction.type === "expense" && oldTransaction.categoryId) {
+    if (oldTransaction.type === "expense" && oldTransaction.categoryId && !oldTransaction.isDebt) {
       const oldMonth = oldTransaction.date.substring(0, 7);
       const oldBudget = await ctx.db.query("budgets").withIndex("by_user_month", (q) => q.eq("userId", userId).eq("month", oldMonth)).filter((q) => q.eq(q.field("categoryId"), oldTransaction.categoryId)).first();
       if (oldBudget) await ctx.db.patch(oldBudget._id, { spent: Math.max(0, oldBudget.spent - oldTransaction.amount) });
@@ -258,7 +262,7 @@ export const update = mutation({
         if (toAccount) await ctx.db.patch(args.transferToAccountId, { balance: toAccount.balance + args.amount });
       }
     }
-    if (args.type === "expense" && args.categoryId) {
+    if (args.type === "expense" && args.categoryId && !args.isDebt) {
       const newMonth = args.date.substring(0, 7);
       const newBudget = await ctx.db.query("budgets").withIndex("by_user_month", (q) => q.eq("userId", userId).eq("month", newMonth)).filter((q) => q.eq(q.field("categoryId"), args.categoryId)).first();
       if (newBudget) await ctx.db.patch(newBudget._id, { spent: newBudget.spent + args.amount });
@@ -274,6 +278,7 @@ export const update = mutation({
       notes: args.notes,
       transferToAccountId: args.transferToAccountId,
       isRecurring: args.isRecurring,
+      isDebt: args.isDebt,
     });
   },
 });
@@ -296,7 +301,8 @@ export const getCategoryBreakdown = query({
         q.and(
           q.gte(q.field("date"), startDate),
           q.lte(q.field("date"), endDate),
-          q.eq(q.field("type"), "expense")
+          q.eq(q.field("type"), "expense"),
+          q.neq(q.field("isDebt"), true)
         )
       )
       .collect();

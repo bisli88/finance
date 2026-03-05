@@ -143,25 +143,39 @@ function Content() {
           </div>
         </div>
 
-        {/* Mobile Bottom Navigation */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 px-2 pb-safe shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.05)]">
-          <nav className="flex justify-around items-center h-16">
+        {/* Mobile Bottom Navigation - Perfect Modern Design */}
+        <div className="md:hidden fixed bottom-6 left-4 right-4 z-50">
+          <nav className="flex justify-around items-center h-[64px] bg-black shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-xl rounded-[2rem] px-1.5 border border-white/10">
             {tabs.map((tab) => {
               const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-200 ${
-                    activeTab === tab.id
-                      ? "text-black"
-                      : "text-slate-400 hover:text-slate-600"
-                  }`}
+                  className={`
+                    relative flex items-center justify-center transition-all duration-500 ease-out
+                    ${isActive ? "flex-[2] bg-white/15 rounded-full h-[48px] mx-1" : "flex-1 h-[48px]"}
+                  `}
                 >
-                  <Icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-                  <span className="text-[10px] font-bold tracking-wide">{tab.label}</span>
-                  {activeTab === tab.id && (
-                    <div className="absolute top-0 w-8 h-1 bg-black rounded-b-full" />
+                  <div className={`flex items-center justify-center gap-2 ${isActive ? "px-3" : ""}`}>
+                    <Icon 
+                      size={isActive ? 20 : 24} 
+                      className={`transition-all duration-300 ${isActive ? "text-white" : "text-white/40"}`}
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
+                    
+                    {isActive && (
+                      <span className="text-xs font-black text-white whitespace-nowrap animate-in fade-in zoom-in duration-300">
+                        {tab.label}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Active Indicator Dot */}
+                  {isActive && (
+                    <div className="absolute -bottom-1.5 w-1 h-1 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,1)]" />
                   )}
                 </button>
               );

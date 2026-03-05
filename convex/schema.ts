@@ -29,6 +29,7 @@ const applicationTables = {
     notes: v.optional(v.string()),
     transferToAccountId: v.optional(v.id("bankAccounts")),
     isRecurring: v.optional(v.boolean()),
+    isDebt: v.optional(v.boolean()),
   })
     .index("by_user", ["userId"])
     .index("by_account", ["accountId"])

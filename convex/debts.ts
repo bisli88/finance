@@ -82,6 +82,7 @@ export const create = mutation({
         type: "expense",
         date: args.createdDate,
         notes: `חוב שנוצר עבור ${args.personName}`,
+        isDebt: true,
       });
     }
 
@@ -235,6 +236,7 @@ export const recordPayment = mutation({
         type,
         date: args.date,
         notes: `תשלום עבור חוב מקורי של ${debt.totalAmount}`,
+        isDebt: true,
       });
 
       // Update account balance
