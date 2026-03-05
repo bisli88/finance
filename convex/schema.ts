@@ -44,6 +44,26 @@ const applicationTables = {
     .index("by_user", ["userId"])
     .index("by_month", ["month"])
     .index("by_user_month", ["userId", "month"]),
+
+  debts: defineTable({
+    userId: v.id("users"),
+    personName: v.string(),
+    totalAmount: v.number(),
+    amountPaid: v.number(),
+    type: v.union(v.literal("they_owe_me"), v.literal("i_owe")),
+    status: v.union(v.literal("pending"), v.literal("paid")),
+    note: v.optional(v.string()),
+    createdDate: v.string(),
+    creationTransactionId: v.optional(v.id("transactions")),
+  }).index("by_user", ["userId"]),
+
+  debtPayments: defineTable({
+    userId: v.id("users"),
+    debtId: v.id("debts"),
+    amount: v.number(),
+    date: v.string(),
+    transactionId: v.optional(v.id("transactions")),
+  }).index("by_user", ["userId"]).index("by_debt", ["debtId"]),
 };
 
 export default defineSchema({

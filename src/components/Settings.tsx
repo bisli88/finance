@@ -17,7 +17,10 @@ import {
   Tag,
   Palette,
   ChevronDown,
-  Wallet
+  Wallet,
+  Target,
+  Calendar,
+  PieChart
 } from "lucide-react";
 
 const ICON_OPTIONS = [
@@ -33,10 +36,19 @@ function DynamicIcon({ name, size = 18, className = "" }: { name: string, size?:
 }
 
 export function Settings() {
+  const currentMonthStr = new Date().toISOString().substring(0, 7);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
+
   const categories = useQuery(api.categories.list);
+  const budgets = useQuery(api.budgets.list, { month: selectedMonth });
+
   const createCategory = useMutation(api.categories.create);
   const updateCategory = useMutation(api.categories.update);
   const deleteCategory = useMutation(api.categories.remove);
+
+  const createBudget = useMutation(api.budgets.create);
+  const updateBudgetAmount = useMutation(api.budgets.updateAmount);
+  const removeBudget = useMutation(api.budgets.remove);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: "", color: "", icon: "Tag" });
@@ -50,9 +62,18 @@ export function Settings() {
     icon: "Tag"
   });
 
-  const [showIconPicker, setShowIconPicker] = useState<string | null>(null); // 'new' or categoryId
+  const [showIconPicker, setShowIconPicker] = useState<string | null>(null);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  // Budget states
+  const [showBudgetForm, setShowBudgetForm] = useState(false);
+  const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
+  const [editBudgetAmount, setEditBudgetAmount] = useState<number>(0);
+  const [budgetFormData, setBudgetFormData] = useState({
+    categoryId: "",
+    amount: 0,
+  });
+
+  const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await createCategory({ ...newCategory, type: activeCategoryType });
@@ -64,7 +85,7 @@ export function Settings() {
     }
   };
 
-  const handleUpdate = async (id: any) => {
+  const handleUpdateCategory = async (id: any) => {
     try {
       await updateCategory({ id, ...editForm });
       setEditingId(null);
@@ -74,7 +95,7 @@ export function Settings() {
     }
   };
 
-  const handleDelete = async (id: any) => {
+  const handleDeleteCategory = async (id: any) => {
     if (!confirm("האם אתה בטוח שברצונך למחוק קטגוריה זו? תנועות המשויכות אליה יישארו ללא קטגוריה.")) return;
     try {
       await deleteCategory({ id });
@@ -84,12 +105,43 @@ export function Settings() {
     }
   };
 
-  const startEditing = (category: any) => {
-    setEditingId(category._id);
-    setEditForm({ name: category.name, color: category.color, icon: category.icon || "Tag" });
+  const handleCreateBudget = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createBudget({
+        categoryId: budgetFormData.categoryId as any,
+        amount: budgetFormData.amount,
+        month: selectedMonth,
+      });
+      setBudgetFormData({ categoryId: "", amount: 0 });
+      setShowBudgetForm(false);
+      toast.success("התקציב נוצר בהצלחה");
+    } catch (error) {
+      toast.error("יצירת התקציב נכשלה");
+    }
   };
 
-  if (categories === undefined) {
+  const handleUpdateBudget = async (id: any) => {
+    try {
+      await updateBudgetAmount({ id, amount: editBudgetAmount });
+      setEditingBudgetId(null);
+      toast.success("התקציב עודכן בהצלחה");
+    } catch (error) {
+      toast.error("עדכון התקציב נכשל");
+    }
+  };
+
+  const handleDeleteBudget = async (id: any) => {
+    if (!confirm("האם אתה בטוח שברצונך למחוק תקציב זה?")) return;
+    try {
+      await removeBudget({ id });
+      toast.success("התקציב נמחק בהצלחה");
+    } catch (error) {
+      toast.error("מחיקת התקציב נכשלה");
+    }
+  };
+
+  if (categories === undefined || budgets === undefined) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black"></div>
@@ -98,6 +150,10 @@ export function Settings() {
   }
 
   const filteredCategories = categories.filter(c => c.type === activeCategoryType);
+  const expenseCategories = categories.filter(cat => cat.type === "expense");
+  const availableCategoriesForBudget = expenseCategories.filter(cat => 
+    !budgets.some(budget => budget.categoryId === cat._id)
+  );
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto pb-12">
@@ -148,7 +204,7 @@ export function Settings() {
               הוספת קטגוריית {activeCategoryType === "expense" ? "הוצאה" : "הכנסה"} חדשה
             </button>
           ) : (
-            <form onSubmit={handleCreate} className="space-y-5 bg-slate-50 p-6 rounded-3xl border border-slate-100 animate-in fade-in zoom-in duration-300">
+            <form onSubmit={handleCreateCategory} className="space-y-5 bg-slate-50 p-6 rounded-3xl border border-slate-100 animate-in fade-in zoom-in duration-300">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Plus size={16} className="text-slate-900" />
@@ -247,15 +303,138 @@ export function Settings() {
                     isEditing={editingId === cat._id}
                     editForm={editForm}
                     onEditFormChange={setEditForm}
-                    onStartEdit={() => startEditing(cat)}
+                    onStartEdit={() => {
+                      setEditingId(cat._id);
+                      setEditForm({ name: cat.name, color: cat.color, icon: cat.icon || "Tag" });
+                    }}
                     onCancelEdit={() => setEditingId(null)}
-                    onUpdate={() => handleUpdate(cat._id)}
-                    onDelete={() => handleDelete(cat._id)}
+                    onUpdate={() => handleUpdateCategory(cat._id)}
+                    onDelete={() => handleDeleteCategory(cat._id)}
                     showIconPicker={showIconPicker === cat._id}
                     onToggleIconPicker={() => setShowIconPicker(showIconPicker === cat._id ? null : cat._id)}
                   />
                 ))}
               </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Budget Management */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white rounded-xl shadow-sm">
+              <Target size={20} className="text-slate-700" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">ניהול תקציבים</h3>
+          </div>
+          
+          <div className="relative">
+            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="pr-9 pl-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all font-bold text-xs"
+            />
+          </div>
+        </div>
+
+        <div className="p-6 md:p-8 space-y-6">
+          {availableCategoriesForBudget.length > 0 && !showBudgetForm && (
+            <button
+              onClick={() => setShowBudgetForm(true)}
+              className="w-full py-4 border-2 border-dashed border-slate-200 rounded-3xl text-slate-400 font-bold text-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+            >
+              <Plus size={18} />
+              הגדר תקציב חדש לחודש זה
+            </button>
+          )}
+
+          {showBudgetForm && (
+            <form onSubmit={handleCreateBudget} className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4 animate-in fade-in zoom-in duration-300">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-slate-900 uppercase">הגדרת תקציב</h4>
+                <button type="button" onClick={() => setShowBudgetForm(false)} className="p-1 hover:bg-slate-200 rounded-full">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <select
+                  value={budgetFormData.categoryId}
+                  onChange={(e) => setBudgetFormData({ ...budgetFormData, categoryId: e.target.value })}
+                  className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none"
+                  required
+                >
+                  <option value="">בחר קטגוריה</option>
+                  {availableCategoriesForBudget.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                </select>
+                <div className="relative">
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₪</span>
+                  <input
+                    type="number"
+                    placeholder="סכום תקציב"
+                    value={budgetFormData.amount || ""}
+                    onChange={(e) => setBudgetFormData({ ...budgetFormData, amount: parseFloat(e.target.value) || 0 })}
+                    className="w-full pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black outline-none"
+                    required
+                  />
+                </div>
+              </div>
+              <button type="submit" className="w-full bg-black text-white py-2.5 rounded-xl font-bold text-sm">
+                שמור תקציב
+              </button>
+            </form>
+          )}
+
+          <div className="grid grid-cols-1 gap-3">
+            {budgets.length === 0 ? (
+              <div className="py-12 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                <p className="text-sm font-bold text-slate-400">אין תקציבים מוגדרים לחודש זה</p>
+              </div>
+            ) : (
+              budgets.map(budget => (
+                <div key={budget._id} className="group bg-white rounded-2xl border border-slate-100 p-4 hover:shadow-sm transition-all flex items-center justify-between">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" 
+                      style={{ backgroundColor: `${budget.category?.color}15`, color: budget.category?.color }}
+                    >
+                      <DynamicIcon name={budget.category?.icon || "PieChart"} size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{budget.category?.name}</p>
+                      {editingBudgetId === budget._id ? (
+                        <div className="flex items-center gap-2 mt-1">
+                          <input 
+                            type="number" 
+                            value={editBudgetAmount}
+                            onChange={(e) => setEditBudgetAmount(parseFloat(e.target.value) || 0)}
+                            className="w-24 px-2 py-1 border border-slate-200 rounded-lg text-xs font-black"
+                            autoFocus
+                          />
+                          <button onClick={() => handleUpdateBudget(budget._id)} className="p-1 bg-black text-white rounded-lg"><Check size={12}/></button>
+                          <button onClick={() => setEditingBudgetId(null)} className="p-1 bg-slate-100 text-slate-500 rounded-lg"><X size={12}/></button>
+                        </div>
+                      ) : (
+                        <p className="text-xs font-black text-slate-400">₪{budget.amount.toLocaleString()}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => { setEditingBudgetId(budget._id); setEditBudgetAmount(budget.amount); }}
+                      className="p-2 text-slate-400 hover:text-black rounded-xl transition-all"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button onClick={() => handleDeleteBudget(budget._id)} className="p-2 text-slate-400 hover:text-red-600 rounded-xl transition-all">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>
@@ -274,7 +453,7 @@ export function Settings() {
         </div>
       </div>
 
-      {/* Account Section */}
+      {/* Logout Section */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
           <div className="p-2 bg-white rounded-xl shadow-sm">

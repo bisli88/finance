@@ -2,34 +2,80 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useState } from "react";
 import { toast } from "sonner";
-import { usePrivacy } from "../App";
-import { Plus, Wallet, CreditCard, Landmark, MoreVertical, PlusCircle } from "lucide-react";
+import { 
+  Plus, 
+  Wallet, 
+  CreditCard, 
+  Landmark, 
+  Edit2, 
+  Trash2, 
+  X, 
+  PlusCircle, 
+  CheckCircle2 
+} from "lucide-react";
 
 export function Accounts() {
   const accounts = useQuery(api.accounts.list);
   const createAccount = useMutation(api.accounts.create);
+  const updateAccount = useMutation(api.accounts.update);
+  const removeAccount = useMutation(api.accounts.remove);
+
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     balance: 0,
     currency: "ILS",
   });
 
+  const resetForm = () => {
+    setFormData({ name: "", balance: 0, currency: "ILS" });
+    setShowForm(false);
+    setEditingId(null);
+  };
+
+  const handleEdit = (account: any) => {
+    setFormData({
+      name: account.name,
+      balance: account.balance,
+      currency: account.currency,
+    });
+    setEditingId(account._id);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: any) => {
+    if (!confirm("האם אתה בטוח שברצונך למחוק חשבון זה? כל התנועות המשויכות אליו יישארו במערכת אך ללא שיוך לחשבון.")) return;
+    try {
+      await removeAccount({ id });
+      toast.success("החשבון נמחק בהצלחה");
+    } catch (error) {
+      toast.error("מחיקת החשבון נכשלה");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createAccount(formData);
-      setFormData({ name: "", balance: 0, currency: "ILS" });
-      setShowForm(false);
-      toast.success("החשבון נוצר בהצלחה");
+      if (editingId) {
+        await updateAccount({
+          id: editingId as any,
+          ...formData,
+        });
+        toast.success("החשבון עודכן בהצלחה");
+      } else {
+        await createAccount(formData);
+        toast.success("החשבון נוצר בהצלחה");
+      }
+      resetForm();
     } catch (error) {
-      toast.error("יצירת החשבון נכשלה");
+      toast.error("הפעולה נכשלה");
     }
   };
 
   if (accounts === undefined) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
+      <div className="flex justify-center items-center min-h-[200px]">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black"></div>
       </div>
     );
@@ -39,11 +85,16 @@ export function Accounts() {
     <div className="space-y-6">
       {showForm && (
         <div className="bg-slate-50 rounded-3xl border border-slate-200 p-6 md:p-8 animate-in fade-in zoom-in duration-300 mb-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-white rounded-xl shadow-sm">
-              <PlusCircle className="w-5 h-5 text-slate-700" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white rounded-xl shadow-sm">
+                {editingId ? <Edit2 className="w-5 h-5 text-slate-700" /> : <PlusCircle className="w-5 h-5 text-slate-700" />}
+              </div>
+              <h3 className="text-lg font-bold">{editingId ? "עריכת חשבון" : "הוספת חשבון חדש"}</h3>
             </div>
-            <h3 className="text-lg font-bold">הוספת חשבון חדש</h3>
+            <button onClick={resetForm} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+              <X size={18} className="text-slate-500" />
+            </button>
           </div>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
@@ -54,12 +105,12 @@ export function Accounts() {
                   placeholder="בנק לאומי, מזומן..."
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm font-medium"
                   required
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-bold text-slate-700">יתרה ראשונית</label>
+                <label className="text-sm font-bold text-slate-700">יתרה</label>
                 <div className="relative">
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₪</span>
                   <input
@@ -67,7 +118,7 @@ export function Accounts() {
                     step="0.01"
                     value={formData.balance}
                     onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
-                    className="w-full pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm"
+                    className="w-full pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm font-black"
                   />
                 </div>
               </div>
@@ -75,14 +126,14 @@ export function Accounts() {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="submit"
-                className="w-full sm:flex-1 bg-black text-white px-6 py-3.5 rounded-2xl hover:bg-slate-800 transition-all font-bold text-sm"
+                className="w-full sm:flex-1 bg-black text-white px-6 py-3.5 rounded-2xl hover:bg-slate-800 transition-all font-bold text-sm shadow-lg active:scale-[0.98]"
               >
-                צור חשבון
+                {editingId ? "עדכן חשבון" : "צור חשבון"}
               </button>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
-                className="w-full sm:px-6 py-3.5 bg-slate-100 text-slate-600 rounded-2xl hover:bg-slate-200 transition-all font-bold text-sm"
+                onClick={resetForm}
+                className="w-full sm:px-6 py-3.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all font-bold text-sm"
               >
                 ביטול
               </button>
@@ -91,50 +142,66 @@ export function Accounts() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {accounts.map((account) => (
-          <div key={account._id} className="group bg-white rounded-3xl border border-slate-200 shadow-sm p-6 hover:shadow-md hover:border-slate-300 transition-all relative overflow-hidden">
-            <div className="flex justify-between items-start mb-6">
-              <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-slate-100 transition-colors">
-                <Landmark className="w-6 h-6 text-slate-700" />
+          <div key={account._id} className="group bg-white rounded-2xl border border-slate-200 shadow-sm p-4 hover:shadow-md hover:border-slate-300 transition-all relative overflow-hidden">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-slate-100 transition-colors">
+                  <Landmark className="w-5 h-5 text-slate-700" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">{account.name}</h3>
+                  <p className={`text-lg font-black tracking-tight blur-amount ${account.balance >= 0 ? 'text-slate-900' : 'text-red-600'}`}>
+                    ₪{account.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
               </div>
-              <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all">
-                <MoreVertical size={18} />
-              </button>
-            </div>
-            
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium text-slate-500">{account.name}</h3>
-              <p className={`text-2xl font-black tracking-tight blur-amount ${account.balance >= 0 ? 'text-slate-900' : 'text-red-600'}`}>
-                ₪{account.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </p>
+              <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={() => handleEdit(account)}
+                  className="p-1.5 text-slate-400 hover:text-black hover:bg-slate-50 rounded-lg transition-all"
+                  title="ערוך"
+                >
+                  <Edit2 size={14} />
+                </button>
+                <button 
+                  onClick={() => handleDelete(account._id)}
+                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                  title="מחק"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
                 {account.currency}
               </span>
-              <div className="flex -space-x-2 space-x-reverse opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center">
-                  <CreditCard size={10} className="text-slate-400" />
+              <div className="flex -space-x-1.5 space-x-reverse opacity-40">
+                <div className="w-5 h-5 rounded-full bg-slate-100 border border-white flex items-center justify-center">
+                  <CreditCard size={8} className="text-slate-400" />
                 </div>
-                <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center">
-                  <Wallet size={10} className="text-slate-400" />
+                <div className="w-5 h-5 rounded-full bg-slate-100 border border-white flex items-center justify-center">
+                  <Wallet size={8} className="text-slate-400" />
                 </div>
               </div>
             </div>
           </div>
         ))}
 
-        <button 
-          onClick={() => setShowForm(true)}
-          className="flex flex-col items-center justify-center py-12 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl hover:bg-slate-100 hover:border-slate-300 transition-all group"
-        >
-          <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-            <Plus className="w-6 h-6 text-slate-400" />
-          </div>
-          <p className="text-slate-500 font-bold text-sm">הוסף חשבון חדש</p>
-        </button>
+        {!showForm && (
+          <button 
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="flex items-center justify-center py-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl hover:bg-slate-100 hover:border-slate-300 transition-all group gap-3"
+          >
+            <div className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Plus className="w-4 h-4 text-slate-400" />
+            </div>
+            <p className="text-slate-500 font-bold text-xs">הוסף חשבון חדש</p>
+          </button>
+        )}
       </div>
     </div>
   );

@@ -54,6 +54,48 @@ export const updateBalance = mutation({
   },
 });
 
+export const update = mutation({
+  args: {
+    id: v.id("bankAccounts"),
+    name: v.string(),
+    balance: v.number(),
+    currency: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const account = await ctx.db.get(args.id);
+    if (!account || account.userId !== userId) {
+      throw new Error("Account not found or unauthorized");
+    }
+
+    await ctx.db.patch(args.id, {
+      name: args.name,
+      balance: args.balance,
+      currency: args.currency,
+    });
+  },
+});
+
+export const remove = mutation({
+  args: { id: v.id("bankAccounts") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const account = await ctx.db.get(args.id);
+    if (!account || account.userId !== userId) {
+      throw new Error("Account not found or unauthorized");
+    }
+
+    // Optional: check if there are transactions associated with this account
+    // For now, we'll just allow deletion.
+
+    await ctx.db.delete(args.id);
+  },
+});
+
 export const getTotalBalance = query({
   args: {},
   handler: async (ctx) => {

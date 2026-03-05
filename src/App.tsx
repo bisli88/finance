@@ -7,7 +7,7 @@ import { useState, useEffect, createContext, useContext } from "react";
 import { Dashboard } from "./components/Dashboard";
 import { Accounts } from "./components/Accounts";
 import { Transactions } from "./components/Transactions";
-import { Budgets } from "./components/Budgets";
+import { Debts } from "./components/Debts";
 import { Settings } from "./components/Settings";
 import { Analytics } from "./components/Analytics";
 import { useMutation } from "convex/react";
@@ -15,10 +15,10 @@ import {
   Home as HomeIcon, 
   Wallet, 
   ArrowRightLeft, 
-  CalendarDays, 
   Settings as SettingsIcon,
   ChevronLeft,
-  BarChart3
+  BarChart3,
+  Banknote
 } from "lucide-react";
 
 // Privacy Context
@@ -78,7 +78,7 @@ function Content() {
     { id: "home", label: "בית", icon: HomeIcon },
     { id: "analytics", label: "ניתוח", icon: BarChart3 },
     { id: "transactions", label: "תנועות", icon: ArrowRightLeft },
-    { id: "budgets", label: "תקציבים", icon: CalendarDays },
+    { id: "debts", label: "חובות", icon: Banknote },
     { id: "settings", label: "הגדרות", icon: SettingsIcon },
   ];
 
@@ -128,7 +128,7 @@ function Content() {
               <p className="text-slate-500 mt-1">
                 {activeTab === "analytics" && "ניתוח מעמיק של ההכנסות וההוצאות שלך"}
                 {activeTab === "transactions" && "עקוב אחר כל ההכנסות וההוצאות שלך"}
-                {activeTab === "budgets" && "תכנן את ההוצאות שלך ועמוד ביעדים"}
+                {activeTab === "debts" && "נהל את החובות שלך ומעקב אחר תשלומים"}
                 {activeTab === "settings" && "התאם אישית את הגדרות האפליקציה ונהל חשבונות"}
               </p>
             </div>
@@ -138,7 +138,7 @@ function Content() {
             {activeTab === "home" && <Dashboard onNavigate={setActiveTab} />}
             {activeTab === "analytics" && <Analytics />}
             {activeTab === "transactions" && <Transactions />}
-            {activeTab === "budgets" && <Budgets />}
+            {activeTab === "debts" && <Debts />}
             {activeTab === "settings" && <Settings />}
           </div>
         </div>

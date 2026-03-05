@@ -16,7 +16,10 @@ import {
   Eye,
   EyeOff,
   Tag,
-  Target
+  Target,
+  Banknote,
+  ArrowUpCircle,
+  ArrowDownCircle
 } from "lucide-react";
 
 function DynamicIcon({ name, size = 18, className = "" }: { name: string, size?: number, className?: string }) {
@@ -31,8 +34,9 @@ export function Dashboard({ onNavigate }: { onNavigate?: (tab: string) => void }
   const currentMonth = new Date().toISOString().substring(0, 7);
   const monthlyStats = useQuery(api.transactions.getMonthlyStats, { month: currentMonth });
   const transactions = useQuery(api.transactions.list, { limit: 5 });
+  const debtStats = useQuery(api.debts.getStats);
 
-  if (totalBalance === undefined || monthlyStats === undefined || accounts === undefined || transactions === undefined) {
+  if (totalBalance === undefined || monthlyStats === undefined || accounts === undefined || transactions === undefined || debtStats === undefined) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black"></div>
@@ -89,6 +93,53 @@ export function Dashboard({ onNavigate }: { onNavigate?: (tab: string) => void }
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <BudgetSummary month={currentMonth} />
+        </div>
+      </div>
+
+      {/* 1c. Debt Overview */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-2">
+          <h3 className="text-sm md:text-base font-bold text-slate-900 flex items-center gap-2 whitespace-nowrap">
+            <Banknote size={16} className="text-blue-600 flex-shrink-0" />
+            חובות פעילים
+          </h3>
+          <button 
+            onClick={() => onNavigate?.("debts")}
+            className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-[10px] md:text-xs font-bold text-slate-600 rounded-lg transition-all flex items-center gap-1 border border-slate-100 whitespace-nowrap flex-shrink-0"
+          >
+            לכל החובות
+            <ChevronLeft size={12} />
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 group hover:shadow-md transition-all">
+            <div className="p-3 bg-green-50 text-green-600 rounded-xl transition-transform group-hover:scale-110">
+              <ArrowUpCircle size={20} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">חייבים לי</p>
+              <p className="text-xl font-black text-slate-900 blur-amount">₪{debtStats.theyOweMe.toLocaleString()}</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 group hover:shadow-md transition-all">
+            <div className="p-3 bg-red-50 text-red-600 rounded-xl transition-transform group-hover:scale-110">
+              <ArrowDownCircle size={20} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">אני חייב</p>
+              <p className="text-xl font-black text-slate-900 blur-amount">₪{debtStats.iOwe.toLocaleString()}</p>
+            </div>
+          </div>
+          <div className="bg-slate-900 p-5 rounded-2xl shadow-lg flex items-center gap-4 group hover:bg-black transition-all sm:col-span-2 lg:col-span-1">
+            <div className="p-3 bg-white/10 text-white rounded-xl transition-transform group-hover:scale-110">
+              <Wallet size={20} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">מאזן נטו</p>
+              <p className="text-xl font-black text-white blur-amount">₪{debtStats.net.toLocaleString()}</p>
+            </div>
+          </div>
         </div>
       </div>
 
