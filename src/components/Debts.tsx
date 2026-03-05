@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { 
   Plus, 
@@ -38,6 +39,18 @@ export function Debts() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState<string | null>(null);
+
+  // Disable body scroll when modal is open
+  useEffect(() => {
+    if (showForm || showPaymentForm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showForm, showPaymentForm]);
   
   const [formData, setFormData] = useState({
     personName: "",
@@ -203,131 +216,145 @@ export function Debts() {
         הוסף חוב חדש
       </button>
 
-      {showForm && (
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl p-6 md:p-8 animate-in fade-in zoom-in duration-300">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-black text-slate-900">
-              {editingId ? "עריכת חוב" : "חוב חדש"}
-            </h3>
-            <button onClick={resetForm} className="p-2 hover:bg-slate-100 rounded-xl">
-              <X size={20} />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest">סוג החוב</label>
-              <div className="flex p-1 bg-slate-100 rounded-2xl">
-                {[
-                  { id: "they_owe_me", label: "חייבים לי", color: "text-green-600" },
-                  { id: "i_owe", label: "אני חייב", color: "text-red-600" }
-                ].map((type) => (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, type: type.id as any })}
-                    className={`flex-1 py-3 px-4 rounded-xl text-sm font-black transition-all ${
-                      formData.type === type.id 
-                        ? `bg-white shadow-sm ${type.color}` 
-                        : "text-slate-400"
-                    }`}
-                  >
-                    {type.label}
-                  </button>
-                ))}
+      {showForm && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 overflow-hidden">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={resetForm} />
+          <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl p-6 md:p-10 animate-in zoom-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto w-full relative overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-black rounded-2xl shadow-xl flex items-center justify-center rotate-3">
+                  <Banknote size={24} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    {editingId ? "עריכת חוב" : "חוב חדש"}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    {editingId ? "עדכון פרטי החוב" : "תיעוד חוב חדש במערכת"}
+                  </p>
+                </div>
               </div>
+              <button onClick={resetForm} className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400 hover:text-black">
+                <X size={24} />
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">שם האדם</label>
-                <input
-                  type="text"
-                  value={formData.personName}
-                  onChange={(e) => setFormData({ ...formData, personName: e.target.value })}
-                  className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-black transition-all font-bold"
-                  placeholder="למשל: ישראל ישראלי"
-                  required
-                />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">סוג החוב</label>
+                <div className="flex p-1 bg-slate-100 rounded-[1rem] w-full">
+                  {[
+                    { id: "they_owe_me", label: "חייבים לי", color: "text-green-600" },
+                    { id: "i_owe", label: "אני חייב", color: "text-red-600" }
+                  ].map((type) => (
+                    <button
+                      key={type.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, type: type.id as any })}
+                      className={`flex-1 py-3 px-4 rounded-[0.75rem] text-xs font-black transition-all ${
+                        formData.type === type.id 
+                          ? `bg-white shadow-sm ${type.color}` 
+                          : "text-slate-400"
+                      }`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">סכום כולל</label>
-                <div className="relative">
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-slate-400">₪</span>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">שם האדם</label>
                   <input
-                    type="number"
-                    value={formData.totalAmount || ""}
-                    onChange={(e) => setFormData({ ...formData, totalAmount: parseFloat(e.target.value) || 0 })}
-                    className="w-full pr-10 pl-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-black transition-all font-black text-lg"
-                    placeholder="0.00"
+                    type="text"
+                    value={formData.personName}
+                    onChange={(e) => setFormData({ ...formData, personName: e.target.value })}
+                    className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-black transition-all font-bold text-sm"
+                    placeholder="למשל: ישראל ישראלי"
                     required
                   />
                 </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest">תאריך יצירה</label>
-              <input
-                type="date"
-                value={formData.createdDate}
-                onChange={(e) => setFormData({ ...formData, createdDate: e.target.value })}
-                className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-black transition-all font-bold"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest">הערה (אופציונלי)</label>
-              <textarea
-                value={formData.note}
-                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-black transition-all font-medium h-24 resize-none"
-                placeholder="למה החוב הזה קיים?"
-              />
-            </div>
-
-            {formData.type === "they_owe_me" && !editingId && (
-              <div className="space-y-4 p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="flex items-center gap-3 cursor-pointer" onClick={() => setFormData({...formData, deductFromAccount: !formData.deductFromAccount})}>
-                  <input
-                    type="checkbox"
-                    checked={formData.deductFromAccount}
-                    onChange={(e) => setFormData({ ...formData, deductFromAccount: e.target.checked })}
-                    className="w-5 h-5 rounded-lg border-slate-300 text-black focus:ring-black"
-                  />
-                  <label className="text-sm font-bold text-slate-700 cursor-pointer">
-                    הורד סכום זה מחשבון קיים (לא ישפיע על התקציב)
-                  </label>
-                </div>
-
-                {formData.deductFromAccount && (
-                  <div className="space-y-2 animate-in fade-in duration-300">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">בחר חשבון</label>
-                    <select
-                      value={formData.accountId}
-                      onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-                      className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-black font-bold text-sm"
-                      required={formData.deductFromAccount}
-                    >
-                      <option value="">בחר חשבון</option>
-                      {accounts.map(acc => <option key={acc._id} value={acc._id}>{acc.name}</option>)}
-                    </select>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">סכום כולל</label>
+                  <div className="relative">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-slate-400">₪</span>
+                    <input
+                      type="number"
+                      value={formData.totalAmount || ""}
+                      onChange={(e) => setFormData({ ...formData, totalAmount: parseFloat(e.target.value) || 0 })}
+                      className="w-full pr-10 pl-5 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-black transition-all font-black text-base"
+                      placeholder="0.00"
+                      required
+                    />
                   </div>
-                )}
+                </div>
               </div>
-            )}
 
-            <div className="flex gap-4 pt-4">
-              <button type="submit" className="flex-1 bg-black text-white py-4 rounded-2xl font-black text-lg shadow-lg">
-                {editingId ? "עדכן חוב" : "שמור חוב"}
-              </button>
-              <button type="button" onClick={resetForm} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold">
-                ביטול
-              </button>
-            </div>
-          </form>
-        </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">תאריך יצירה</label>
+                <input
+                  type="date"
+                  value={formData.createdDate}
+                  onChange={(e) => setFormData({ ...formData, createdDate: e.target.value })}
+                  className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-black transition-all font-bold text-sm"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">הערה (אופציונלי)</label>
+                <textarea
+                  value={formData.note}
+                  onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                  className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-black transition-all font-medium h-24 resize-none text-sm"
+                  placeholder="למה החוב הזה קיים?"
+                />
+              </div>
+
+              {formData.type === "they_owe_me" && !editingId && (
+                <div className="space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div className="flex items-center gap-3 cursor-pointer" onClick={() => setFormData({...formData, deductFromAccount: !formData.deductFromAccount})}>
+                    <input
+                      type="checkbox"
+                      checked={formData.deductFromAccount}
+                      onChange={(e) => setFormData({ ...formData, deductFromAccount: e.target.checked })}
+                      className="w-4 h-4 rounded border-slate-300 text-black focus:ring-black"
+                    />
+                    <label className="text-xs font-bold text-slate-700 cursor-pointer">
+                      הורד סכום זה מחשבון קיים (לא ישפיע על התקציב)
+                    </label>
+                  </div>
+
+                  {formData.deductFromAccount && (
+                    <div className="space-y-2 animate-in fade-in duration-300">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">בחר חשבון</label>
+                      <select
+                        value={formData.accountId}
+                        onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-black font-bold text-xs"
+                        required={formData.deductFromAccount}
+                      >
+                        <option value="">בחר חשבון</option>
+                        {accounts.map(acc => <option key={acc._id} value={acc._id}>{acc.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button type="submit" className="flex-1 bg-black text-white py-4 rounded-xl font-black text-base shadow-lg hover:bg-slate-800 transition-all">
+                  {editingId ? "עדכן חוב" : "שמור חוב"}
+                </button>
+                <button type="button" onClick={resetForm} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-xl font-bold text-sm">
+                  ביטול
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Debt List */}
@@ -431,86 +458,92 @@ export function Debts() {
                 </div>
 
                 {showPaymentForm === debt._id && (
-                  <div className="border-t border-slate-100 bg-slate-50/50 p-6 animate-in slide-in-from-top-4 duration-300">
-                    <div className="flex items-center justify-between mb-4">
-                      <h5 className="font-black text-slate-900">רישום תשלום עבור {debt.personName}</h5>
-                      <button onClick={resetPaymentForm} className="p-1 hover:bg-slate-200 rounded-lg">
-                        <X size={16} />
-                      </button>
-                    </div>
-                    
-                    <form onSubmit={handlePaymentSubmit} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">סכום התשלום</label>
-                          <input
-                            type="number"
-                            max={remaining}
-                            value={paymentData.amount || ""}
-                            onChange={(e) => setPaymentData({ ...paymentData, amount: parseFloat(e.target.value) || 0 })}
-                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-black font-black"
-                            required
-                          />
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={resetPaymentForm} />
+                    <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl p-6 md:p-10 animate-in zoom-in slide-in-from-bottom-4 duration-500 max-w-xl w-full relative">
+                      <div className="flex items-center justify-between mb-8">
+                        <div>
+                          <h5 className="text-xl font-black text-slate-900 tracking-tight">רישום תשלום</h5>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">עבור {debt.personName}</p>
                         </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">תאריך</label>
-                          <input
-                            type="date"
-                            value={paymentData.date}
-                            onChange={(e) => setPaymentData({ ...paymentData, date: e.target.value })}
-                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-black font-bold"
-                            required
-                          />
-                        </div>
+                        <button onClick={resetPaymentForm} className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400 hover:text-black">
+                          <X size={24} />
+                        </button>
                       </div>
-
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200">
-                        <input
-                          type="checkbox"
-                          id="createTransaction"
-                          checked={paymentData.createTransaction}
-                          onChange={(e) => setPaymentData({ ...paymentData, createTransaction: e.target.checked })}
-                          className="w-5 h-5 rounded-lg border-slate-300 text-black focus:ring-black"
-                        />
-                        <label htmlFor="createTransaction" className="text-sm font-bold text-slate-700 cursor-pointer">
-                          צור תנועה בחשבון הבנק (מעדכן יתרה)
-                        </label>
-                      </div>
-
-                      {paymentData.createTransaction && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
+                      
+                      <form onSubmit={handlePaymentSubmit} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                           <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">חשבון</label>
-                            <select
-                              value={paymentData.accountId}
-                              onChange={(e) => setPaymentData({ ...paymentData, accountId: e.target.value })}
-                              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-black font-bold text-sm"
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">סכום התשלום</label>
+                            <input
+                              type="number"
+                              max={remaining}
+                              value={paymentData.amount || ""}
+                              onChange={(e) => setPaymentData({ ...paymentData, amount: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-black font-black text-base"
                               required
-                            >
-                              <option value="">בחר חשבון</option>
-                              {accounts.map(acc => <option key={acc._id} value={acc._id}>{acc.name}</option>)}
-                            </select>
+                            />
                           </div>
                           <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">קטגוריה</label>
-                            <select
-                              value={paymentData.categoryId}
-                              onChange={(e) => setPaymentData({ ...paymentData, categoryId: e.target.value })}
-                              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-black font-bold text-sm"
-                            >
-                              <option value="">בחר קטגוריה (אופציונלי)</option>
-                              {categories.filter(c => c.type === (isOwedToMe ? 'income' : 'expense')).map(cat => (
-                                <option key={cat._id} value={cat._id}>{cat.name}</option>
-                              ))}
-                            </select>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">תאריך</label>
+                            <input
+                              type="date"
+                              value={paymentData.date}
+                              onChange={(e) => setPaymentData({ ...paymentData, date: e.target.value })}
+                              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-black font-bold text-sm"
+                              required
+                            />
                           </div>
                         </div>
-                      )}
 
-                      <button type="submit" className="w-full bg-black text-white py-3 rounded-xl font-black shadow-md">
-                        אשר תשלום
-                      </button>
-                    </form>
+                        <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                          <input
+                            type="checkbox"
+                            id="createTransaction"
+                            checked={paymentData.createTransaction}
+                            onChange={(e) => setPaymentData({ ...paymentData, createTransaction: e.target.checked })}
+                            className="w-4 h-4 rounded border-slate-300 text-black focus:ring-black"
+                          />
+                          <label htmlFor="createTransaction" className="text-xs font-bold text-slate-700 cursor-pointer">
+                            צור תנועה בחשבון הבנק (מעדכן יתרה)
+                          </label>
+                        </div>
+
+                        {paymentData.createTransaction && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">חשבון</label>
+                              <select
+                                value={paymentData.accountId}
+                                onChange={(e) => setPaymentData({ ...paymentData, accountId: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-black font-bold text-xs"
+                                required
+                              >
+                                <option value="">בחר חשבון</option>
+                                {accounts.map(acc => <option key={acc._id} value={acc._id}>{acc.name}</option>)}
+                              </select>
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">קטגוריה</label>
+                              <select
+                                value={paymentData.categoryId}
+                                onChange={(e) => setPaymentData({ ...paymentData, categoryId: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-black font-bold text-xs"
+                              >
+                                <option value="">בחר קטגוריה (אופציונלי)</option>
+                                {categories.filter(c => c.type === (isOwedToMe ? 'income' : 'expense')).map(cat => (
+                                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        )}
+
+                        <button type="submit" className="w-full bg-black text-white py-4 rounded-xl font-black shadow-md hover:bg-slate-800 transition-all">
+                          אשר תשלום
+                        </button>
+                      </form>
+                    </div>
                   </div>
                 )}
               </div>

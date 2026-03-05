@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { 
   Plus, 
@@ -22,6 +23,19 @@ export function Accounts() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Disable body scroll when modal is open
+  useEffect(() => {
+    if (showForm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showForm]);
+
   const [formData, setFormData] = useState({
     name: "",
     balance: 0,
@@ -83,66 +97,70 @@ export function Accounts() {
 
   return (
     <div className="space-y-6">
-      {showForm && (
-        <div 
-          data-tour="account-form"
-          className="bg-slate-50 rounded-3xl border border-slate-200 p-6 md:p-8 animate-in fade-in zoom-in duration-300 mb-6"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white rounded-xl shadow-sm">
-                {editingId ? <Edit2 className="w-5 h-5 text-slate-700" /> : <PlusCircle className="w-5 h-5 text-slate-700" />}
+      {showForm && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={resetForm} />
+          <div 
+            data-tour="account-form"
+            className="bg-white rounded-[2.5rem] border border-slate-200 p-6 md:p-8 animate-in zoom-in slide-in-from-bottom-4 duration-500 shadow-2xl max-w-lg w-full relative"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-50 rounded-xl shadow-sm">
+                  {editingId ? <Edit2 className="w-5 h-5 text-slate-700" /> : <PlusCircle className="w-5 h-5 text-slate-700" />}
+                </div>
+                <h3 className="text-lg font-bold">{editingId ? "עריכת חשבון" : "הוספת חשבון חדש"}</h3>
               </div>
-              <h3 className="text-lg font-bold">{editingId ? "עריכת חשבון" : "הוספת חשבון חדש"}</h3>
+              <button onClick={resetForm} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <X size={18} className="text-slate-500" />
+              </button>
             </div>
-            <button onClick={resetForm} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
-              <X size={18} className="text-slate-500" />
-            </button>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
-              <div className="space-y-1.5">
-                <label className="text-sm font-bold text-slate-700">שם החשבון</label>
-                <input
-                  type="text"
-                  placeholder="בנק לאומי, מזומן..."
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm font-medium"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-bold text-slate-700">יתרה</label>
-                <div className="relative">
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₪</span>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">שם החשבון</label>
                   <input
-                    type="number"
-                    step="0.01"
-                    value={formData.balance}
-                    onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
-                    className="w-full pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm font-black"
+                    type="text"
+                    placeholder="בנק לאומי, מזומן..."
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm font-medium"
+                    required
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">יתרה התחלתית</label>
+                  <div className="relative">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₪</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.balance}
+                      onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
+                      className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-sm font-black"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                type="submit"
-                className="w-full sm:flex-1 bg-black text-white px-6 py-3.5 rounded-2xl hover:bg-slate-800 transition-all font-bold text-sm shadow-lg active:scale-[0.98]"
-              >
-                {editingId ? "עדכן חשבון" : "צור חשבון"}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="w-full sm:px-6 py-3.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all font-bold text-sm"
-              >
-                ביטול
-              </button>
-            </div>
-          </form>
-        </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-black text-white px-6 py-3.5 rounded-xl hover:bg-slate-800 transition-all font-bold text-sm shadow-lg active:scale-[0.98]"
+                >
+                  {editingId ? "עדכן חשבון" : "צור חשבון"}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="px-6 py-3.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all font-bold text-sm"
+                >
+                  ביטול
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

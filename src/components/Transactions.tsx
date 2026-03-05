@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { usePrivacy } from "../App";
 import * as LucideIcons from "lucide-react";
@@ -40,6 +41,19 @@ export function Transactions() {
   
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Disable body scroll when modal is open
+  useEffect(() => {
+    if (showForm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showForm]);
+
   const [formData, setFormData] = useState({
     accountId: "",
     categoryId: "",
@@ -260,215 +274,204 @@ export function Transactions() {
         )}
       </div>
 
-      {showForm && (
-        <div 
-          data-tour="transaction-form"
-          className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl p-6 md:p-12 animate-in fade-in zoom-in duration-500 max-w-2xl mx-auto w-full mb-12 relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[5rem] -z-10 opacity-50"></div>
-          
-          <div className="flex items-center justify-between mb-10">
-            <div className="flex items-center gap-5">
-              <div className="w-14 h-14 bg-black rounded-2xl shadow-xl flex items-center justify-center rotate-3">
-                <Plus size={28} className="text-white" />
+      {showForm && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 overflow-hidden">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={resetForm} />
+          <div 
+            data-tour="transaction-form"
+            className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl p-6 md:p-10 animate-in zoom-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto w-full relative overflow-y-auto max-h-[90vh] no-scrollbar"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[5rem] -z-10 opacity-50"></div>
+            
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 bg-black rounded-2xl shadow-xl flex items-center justify-center rotate-3">
+                  <Plus size={24} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    {editingId ? "עריכת תנועה" : "תנועה חדשה"}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    {editingId ? "עדכון פרטי הפעולה" : "תיעוד פעולה כספית"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                  {editingId ? "עריכת תנועה" : "תנועה חדשה"}
-                </h3>
-                <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">
-                  {editingId ? "עדכון פרטי הפעולה" : "תיעוד פעולה כספית"}
-                </p>
-              </div>
-            </div>
-            <button 
-              onClick={resetForm}
-              className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400 hover:text-black hover:rotate-90 duration-300"
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">סוג התנועה</label>
-              <div className="flex p-1.5 bg-slate-100 rounded-[1.25rem] w-full">
-                {[
-                  { id: "expense", label: "הוצאה", color: "text-red-600", bg: "bg-white shadow-sm" },
-                  { id: "income", label: "הכנסה", color: "text-green-600", bg: "bg-white shadow-sm" },
-                  { id: "transfer", label: "העברה", color: "text-blue-600", bg: "bg-white shadow-sm" }
-                ].map((type) => (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, type: type.id as any, categoryId: "" })}
-                    className={`flex-1 py-3.5 px-4 rounded-[0.9rem] text-sm font-black transition-all duration-300 ${
-                      formData.type === type.id 
-                        ? `${type.bg} ${type.color}` 
-                        : "text-slate-400 hover:text-slate-600"
-                    }`}
-                  >
-                    {type.label}
-                  </button>
-                ))}
-              </div>
+              <button 
+                onClick={resetForm}
+                className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400 hover:text-black hover:rotate-90 duration-300"
+              >
+                <X size={24} />
+              </button>
             </div>
 
-            <div className="bg-slate-50 rounded-[2rem] p-8 text-center border border-slate-100 group focus-within:border-black/10 transition-all">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-4">כמה כסף?</label>
-              <div className="relative inline-flex items-center">
-                <span className="text-4xl font-black text-slate-300 mr-2 group-focus-within:text-black transition-colors">₪</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.amount || ""}
-                  onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                  className="bg-transparent border-none outline-none font-black text-6xl text-slate-900 w-48 text-center placeholder:text-slate-200"
-                  placeholder="0.00"
-                  autoFocus
-                  required
-                />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">סוג התנועה</label>
+                <div className="flex p-1 bg-slate-100 rounded-[1.25rem] w-full">
+                  {[
+                    { id: "expense", label: "הוצאה", color: "text-red-600", bg: "bg-white shadow-sm" },
+                    { id: "income", label: "הכנסה", color: "text-green-600", bg: "bg-white shadow-sm" },
+                    { id: "transfer", label: "העברה", color: "text-blue-600", bg: "bg-white shadow-sm" }
+                  ].map((type) => (
+                    <button
+                      key={type.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, type: type.id as any, categoryId: "" })}
+                      className={`flex-1 py-3 px-4 rounded-[0.9rem] text-xs font-black transition-all duration-300 ${
+                        formData.type === type.id 
+                          ? `${type.bg} ${type.color}` 
+                          : "text-slate-400 hover:text-slate-600"
+                      }`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {formData.type !== 'transfer' && (
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">כותרת התנועה</label>
-                <div className="relative group">
-                  <Info size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-black transition-colors" />
+              <div className="bg-slate-50 rounded-[2rem] p-6 text-center border border-slate-100 group focus-within:border-black/10 transition-all">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-4">כמה כסף?</label>
+                <div className="relative inline-flex items-center">
+                  <span className="text-3xl font-black text-slate-300 mr-2 group-focus-within:text-black transition-colors">₪</span>
                   <input
-                    type="text"
-                    placeholder="למשל: קניות בסופר, משכורת מרץ..."
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full pr-12 pl-6 py-4 bg-white border-2 border-slate-100 focus:border-black rounded-2xl outline-none transition-all font-bold text-slate-900 placeholder:text-slate-300"
-                    required={formData.type !== 'transfer'}
+                    type="number"
+                    step="0.01"
+                    value={formData.amount || ""}
+                    onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                    className="bg-transparent border-none outline-none font-black text-4xl text-slate-900 w-32 text-center placeholder:text-slate-200"
+                    placeholder="0.00"
+                    autoFocus
+                    required
                   />
                 </div>
               </div>
-            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {formData.type !== "transfer" ? (
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">קטגוריה</label>
-                  <div className="relative">
-                    <Tag size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
-                    <select
-                      value={formData.categoryId}
-                      onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                      className="w-full pr-12 pl-10 py-4 bg-white border-2 border-slate-100 focus:border-black rounded-2xl outline-none transition-all font-bold text-sm appearance-none cursor-pointer text-slate-900"
-                    >
-                      <option value="">בחר קטגוריה</option>
-                      {filteredCategoriesForForm.map((category) => (
-                        <option key={category._id} value={category._id}>{category.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              {formData.type !== 'transfer' && (
+                <div className="space-y-1">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">כותרת התנועה</label>
+                  <div className="relative group">
+                    <Info size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-black transition-colors" />
+                    <input
+                      type="text"
+                      placeholder="למשל: קניות בסופר, משכורת מרץ..."
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full pr-12 pl-6 py-3.5 bg-white border-2 border-slate-100 focus:border-black rounded-xl outline-none transition-all font-bold text-slate-900 placeholder:text-slate-300 text-sm"
+                      required={formData.type !== 'transfer'}
+                    />
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">חשבון יעד</label>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {formData.type !== "transfer" ? (
+                  <div className="space-y-1">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">קטגוריה</label>
+                    <div className="relative">
+                      <Tag size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                      <select
+                        value={formData.categoryId}
+                        onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                        className="w-full pr-12 pl-10 py-3.5 bg-white border-2 border-slate-100 focus:border-black rounded-xl outline-none transition-all font-bold text-xs appearance-none cursor-pointer text-slate-900"
+                      >
+                        <option value="">בחר קטגוריה</option>
+                        {filteredCategoriesForForm.map((category) => (
+                          <option key={category._id} value={category._id}>{category.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">חשבון יעד</label>
+                    <div className="relative">
+                      <ChevronRight size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                      <select
+                        value={formData.transferToAccountId}
+                        onChange={(e) => setFormData({ ...formData, transferToAccountId: e.target.value })}
+                        className="w-full pr-12 pl-10 py-3.5 bg-white border-2 border-slate-100 focus:border-black rounded-xl outline-none transition-all font-bold text-xs appearance-none cursor-pointer text-slate-900"
+                        required
+                      >
+                        <option value="">בחר חשבון יעד</option>
+                        {accounts.filter(acc => acc._id !== formData.accountId).map((account) => (
+                          <option key={account._id} value={account._id}>{account.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">חשבון מקור</label>
                   <div className="relative">
-                    <ChevronRight size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                    <Wallet size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
                     <select
-                      value={formData.transferToAccountId}
-                      onChange={(e) => setFormData({ ...formData, transferToAccountId: e.target.value })}
-                      className="w-full pr-12 pl-10 py-4 bg-white border-2 border-slate-100 focus:border-black rounded-2xl outline-none transition-all font-bold text-sm appearance-none cursor-pointer text-slate-900"
+                      value={formData.accountId}
+                      onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+                      className="w-full pr-12 pl-10 py-3.5 bg-white border-2 border-slate-100 focus:border-black rounded-xl outline-none transition-all font-bold text-xs appearance-none cursor-pointer text-slate-900"
                       required
                     >
-                      <option value="">בחר חשבון יעד</option>
-                      {accounts.filter(acc => acc._id !== formData.accountId).map((account) => (
+                      <option value="">בחר חשבון</option>
+                      {accounts.map((account) => (
                         <option key={account._id} value={account._id}>{account.name}</option>
                       ))}
                     </select>
                     <ChevronDown size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   </div>
                 </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">חשבון מקור</label>
-                <div className="relative">
-                  <Wallet size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
-                  <select
-                    value={formData.accountId}
-                    onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-                    className="w-full pr-12 pl-10 py-4 bg-white border-2 border-slate-100 focus:border-black rounded-2xl outline-none transition-all font-bold text-sm appearance-none cursor-pointer text-slate-900"
-                    required
-                  >
-                    <option value="">בחר חשבון</option>
-                    {accounts.map((account) => (
-                      <option key={account._id} value={account._id}>{account.name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">מתי זה קרה?</label>
-              <div className="relative group">
-                <Calendar size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-black transition-colors" />
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full pr-12 pl-6 py-4 bg-white border-2 border-slate-100 focus:border-black rounded-2xl outline-none transition-all font-bold text-slate-900 cursor-pointer"
-                  required
-                />
-              </div>
-            </div>
-
-            {formData.type !== 'transfer' && (
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">הערות נוספות</label>
+              <div className="space-y-1">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1">מתי זה קרה?</label>
                 <div className="relative group">
-                  <FileText size={18} className="absolute right-5 top-5 text-slate-300 group-focus-within:text-black transition-colors" />
-                  <textarea
-                    placeholder="כתוב כאן משהו שיעזור לך לזכור..."
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full pr-12 pl-6 py-4 bg-white border-2 border-slate-100 focus:border-black rounded-2xl outline-none transition-all font-medium text-sm text-slate-900 resize-none h-24"
+                  <Calendar size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-black transition-colors" />
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="w-full pr-12 pl-6 py-3.5 bg-white border-2 border-slate-100 focus:border-black rounded-xl outline-none transition-all font-bold text-slate-900 cursor-pointer text-sm"
+                    required
                   />
                 </div>
               </div>
-            )}
 
-            <div className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setFormData({...formData, isRecurring: !formData.isRecurring})}>
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-xl transition-all ${formData.isRecurring ? 'bg-black text-white' : 'bg-white text-slate-400 shadow-sm'}`}>
-                  <Repeat size={20} />
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setFormData({...formData, isRecurring: !formData.isRecurring})}>
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-xl transition-all ${formData.isRecurring ? 'bg-black text-white' : 'bg-white text-slate-400 shadow-sm'}`}>
+                    <Repeat size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-slate-900">תשלום קבוע</h4>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">חזור בכל חודש</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-sm font-black text-slate-900">תשלום קבוע</h4>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter">חזור על פעולה זו בכל חודש</p>
+                <div className={`w-10 h-5 rounded-full transition-all relative ${formData.isRecurring ? 'bg-black' : 'bg-slate-200'}`}>
+                  <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${formData.isRecurring ? 'right-6' : 'right-1'}`}></div>
                 </div>
               </div>
-              <div className={`w-12 h-6 rounded-full transition-all relative ${formData.isRecurring ? 'bg-black' : 'bg-slate-200'}`}>
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isRecurring ? 'right-7' : 'right-1'}`}></div>
-              </div>
-            </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-6">
-              <button
-                type="submit"
-                className="flex-[2] bg-black text-white px-8 py-5 rounded-[1.25rem] hover:bg-slate-800 transition-all font-black text-xl shadow-xl hover:shadow-2xl active:scale-[0.98] tracking-tight"
-              >
-                {editingId ? "עדכן תנועה" : "שמור תנועה"}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex-1 px-8 py-5 bg-slate-100 text-slate-400 rounded-[1.25rem] hover:bg-slate-200 transition-all font-bold text-sm"
-              >
-                ביטול
-              </button>
-            </div>
-          </form>
-        </div>
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-[2] bg-black text-white px-8 py-4 rounded-xl hover:bg-slate-800 transition-all font-black text-sm shadow-xl hover:shadow-2xl active:scale-[0.98] tracking-tight"
+                >
+                  {editingId ? "עדכן תנועה" : "שמור תנועה"}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="flex-1 px-8 py-4 bg-slate-100 text-slate-400 rounded-xl hover:bg-slate-200 transition-all font-bold text-sm"
+                >
+                  ביטול
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
       )}
 
       <div className="space-y-8">

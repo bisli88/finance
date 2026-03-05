@@ -36,7 +36,7 @@ export default function App() {
 
   return (
     <PrivacyContext.Provider value={{ isPrivate, togglePrivacy }}>
-      <div className={`min-h-screen flex flex-col bg-gradient-to-br from-purple-400 via-indigo-500 to-blue-500 pb-20 md:pb-0 font-sans text-slate-900 ${isPrivate ? 'privacy-active' : ''}`}>
+      <div className={`min-h-screen flex flex-col bg-[#1f6f5c] pb-20 md:pb-0 font-sans text-slate-900 ${isPrivate ? 'privacy-active' : ''}`}>
         <main className="flex-1">
           <Content />
         </main>
