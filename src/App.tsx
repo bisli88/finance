@@ -135,24 +135,27 @@ function Content() {
     }
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-    
-    if (isDraggingRef.current && dragTargetTabRef.current) {
-      setActiveTab(dragTargetTabRef.current);
-    }
-    
-    // Small delay to prevent the click event from seeing isDragging as false
-    // but clear targeted states immediately to hide bubble
-    setIsDragging(false);
-    isDraggingRef.current = false;
-    setDragTargetTab(null);
-    dragTargetTabRef.current = null;
-  };
 
+    if (isDraggingRef.current) {
+      if (dragTargetTabRef.current) {
+        setActiveTab(dragTargetTabRef.current);
+      }
+      if (e.cancelable) e.preventDefault();
+    }
+
+    // Small delay to prevent the click event from seeing isDragging as false
+    setTimeout(() => {
+      setIsDragging(false);
+      isDraggingRef.current = false;
+      setDragTargetTab(null);
+      dragTargetTabRef.current = null;
+    }, 50);
+  };
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [activeTab]);
