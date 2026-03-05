@@ -54,12 +54,12 @@ function Content() {
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
   const [dragX, setDragX] = useState(0);
-  const dragXRef = useRef(0);
   const [dragTargetTab, setDragTargetTab] = useState<string | null>(null);
   const dragTargetTabRef = useRef<string | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<any>(null);
   const touchStartPos = useRef({ x: 0, y: 0 });
+  const blockClicksRef = useRef(false);
 
   const tabs = [
     { id: "home", label: "בית", icon: HomeIcon },
@@ -78,21 +78,21 @@ function Content() {
     longPressTimer.current = setTimeout(() => {
       setIsDragging(true);
       isDraggingRef.current = true;
+      blockClicksRef.current = true;
+      
       if (navRef.current) {
         const rect = navRef.current.getBoundingClientRect();
         const x = touch.clientX - rect.left;
         setDragX(x);
-        dragXRef.current = x;
         
         // Initialize target immediately
         const tabWidth = rect.width / tabs.length;
         const visualIndexFromLeft = Math.floor(x / tabWidth);
         const logicalIndex = tabs.length - 1 - visualIndexFromLeft;
-        if (logicalIndex >= 0 && logicalIndex < tabs.length) {
-          const targetId = tabs[logicalIndex].id;
-          setDragTargetTab(targetId);
-          dragTargetTabRef.current = targetId;
-        }
+        const clampedIndex = Math.max(0, Math.min(logicalIndex, tabs.length - 1));
+        const targetId = tabs[clampedIndex].id;
+        setDragTargetTab(targetId);
+        dragTargetTabRef.current = targetId;
       }
       if ('vibrate' in navigator) navigator.vibrate(50);
     }, 400); // 400ms for long press
@@ -121,18 +121,15 @@ function Content() {
     const rect = navRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(touch.clientX - rect.left, rect.width));
     setDragX(x);
-    dragXRef.current = x;
 
     // Calculate target tab index (Reversed for RTL)
     const tabWidth = rect.width / tabs.length;
     const visualIndexFromLeft = Math.floor(x / tabWidth);
     const logicalIndex = tabs.length - 1 - visualIndexFromLeft;
-    
-    if (logicalIndex >= 0 && logicalIndex < tabs.length) {
-      const targetId = tabs[logicalIndex].id;
-      setDragTargetTab(targetId);
-      dragTargetTabRef.current = targetId;
-    }
+    const clampedIndex = Math.max(0, Math.min(logicalIndex, tabs.length - 1));
+    const targetId = tabs[clampedIndex].id;
+    setDragTargetTab(targetId);
+    dragTargetTabRef.current = targetId;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -151,18 +148,25 @@ function Content() {
       setIsDragging(false);
       setDragTargetTab(null);
       
-      // Keep the ref true for a tiny bit longer just to block the trailing click
+      // Keep blocking clicks for a short duration to prevent mis-clicks
       setTimeout(() => {
         isDraggingRef.current = false;
         dragTargetTabRef.current = null;
-      }, 100);
+        blockClicksRef.current = false;
+      }, 150);
     } else {
       // Normal tap - clear everything
       setIsDragging(false);
       isDraggingRef.current = false;
       setDragTargetTab(null);
       dragTargetTabRef.current = null;
+      blockClicksRef.current = false;
     }
+  };
+
+  const handleTabClick = (tabId: string) => {
+    if (blockClicksRef.current) return;
+    setActiveTab(tabId);
   };
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -287,7 +291,7 @@ function Content() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => !isDragging && setActiveTab(tab.id)}
+                  onClick={() => handleTabClick(tab.id)}
                   onTouchStart={(e) => handleTouchStart(e, tab.id)}
                   className={`
                     relative flex items-center justify-center transition-all duration-500 ease-out z-10
