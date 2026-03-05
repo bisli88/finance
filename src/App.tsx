@@ -228,13 +228,15 @@ function Content() {
             {/* Animated Drag Bubble */}
             {isDragging && (
               <div 
-                className="absolute bg-white/25 rounded-full transition-all duration-75 ease-out pointer-events-none z-0 shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+                className="absolute bg-white/30 rounded-full pointer-events-none z-0 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
                 style={{ 
-                  top: '4px',
-                  bottom: '4px',
-                  left: `${(dragX / (navRef.current?.getBoundingClientRect().width || 1)) * 100 - (100/tabs.length/2)}%`,
-                  width: `${100 / tabs.length}%`,
-                  transform: 'scale(1.15)',
+                  top: '6px',
+                  bottom: '6px',
+                  width: `${100 / tabs.length - 2}%`,
+                  left: '0',
+                  transform: `translateX(${dragX - (navRef.current?.getBoundingClientRect().width || 0) / (tabs.length * 2)}px) scale(1.2)`,
+                  transition: 'transform 0.05s linear',
+                  marginLeft: '1%'
                 }}
               />
             )}
