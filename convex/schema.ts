@@ -16,6 +16,7 @@ const applicationTables = {
     type: v.union(v.literal("income"), v.literal("expense")),
     color: v.string(),
     icon: v.optional(v.string()),
+    excludeFromAnalytics: v.optional(v.boolean()),
   }).index("by_user", ["userId"]),
 
   transactions: defineTable({

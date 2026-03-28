@@ -27,7 +27,6 @@ export const list = query({
         .take(args.limit || 50);
     }
 
-    // Get account and category details
     const enrichedTransactions = await Promise.all(
       transactions.map(async (transaction) => {
         const account = await ctx.db.get(transaction.accountId);
@@ -64,13 +63,11 @@ export const create = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    // Verify account ownership
     const account = await ctx.db.get(args.accountId);
     if (!account || account.userId !== userId) {
       throw new Error("Account not found");
     }
 
-    // Create transaction
     const transactionId = await ctx.db.insert("transactions", {
       userId,
       accountId: args.accountId,
@@ -85,7 +82,6 @@ export const create = mutation({
       isDebt: args.isDebt,
     });
 
-    // Update account balances
     if (args.type === "income") {
       await ctx.db.patch(args.accountId, {
         balance: account.balance + args.amount,
@@ -106,9 +102,8 @@ export const create = mutation({
       }
     }
 
-    // Update budget spending if it's an expense AND not a debt
     if (args.type === "expense" && args.categoryId && !args.isDebt) {
-      const currentMonth = args.date.substring(0, 7); // "2024-01"
+      const currentMonth = args.date.substring(0, 7);
       const budget = await ctx.db
         .query("budgets")
         .withIndex("by_user_month", (q) => q.eq("userId", userId).eq("month", currentMonth))
@@ -128,7 +123,7 @@ export const create = mutation({
 
 export const getMonthlyStats = query({
   args: {
-    month: v.string(), // Format: "2024-01"
+    month: v.string(),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -149,11 +144,22 @@ export const getMonthlyStats = query({
       )
       .collect();
 
-    const income = transactions
+    const filteredTransactions = await Promise.all(
+      transactions.map(async (t) => {
+        if (!t.categoryId) return t;
+        const category = await ctx.db.get(t.categoryId);
+        if (category?.excludeFromAnalytics) return null;
+        return t;
+      })
+    );
+
+    const activeTransactions = filteredTransactions.filter((t): t is NonNullable<typeof t> => t !== null);
+
+    const income = activeTransactions
       .filter(t => t.type === "income")
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const expenses = transactions
+    const expenses = activeTransactions
       .filter(t => t.type === "expense")
       .reduce((sum, t) => sum + t.amount, 0);
 
@@ -176,7 +182,6 @@ export const remove = mutation({
       throw new Error("Transaction not found or unauthorized");
     }
 
-    // 1. Reverse account balance impact
     const account = await ctx.db.get(transaction.accountId);
     if (account) {
       if (transaction.type === "income") {
@@ -192,7 +197,6 @@ export const remove = mutation({
       }
     }
 
-    // 2. Reverse budget impact (if expense AND not a debt)
     if (transaction.type === "expense" && transaction.categoryId && !transaction.isDebt) {
       const month = transaction.date.substring(0, 7);
       const budget = await ctx.db
@@ -231,10 +235,6 @@ export const update = mutation({
     const oldTransaction = await ctx.db.get(args.id);
     if (!oldTransaction || oldTransaction.userId !== userId) throw new Error("Unauthorized");
 
-    // To keep it simple and robust: reverse old impacts, then apply new ones
-    // (Wait, we can just call an internal removal logic, but for safety let's do it manually here)
-    
-    // Reverse OLD impacts
     const oldAccount = await ctx.db.get(oldTransaction.accountId);
     if (oldAccount) {
       if (oldTransaction.type === "income") await ctx.db.patch(oldTransaction.accountId, { balance: oldAccount.balance - oldTransaction.amount });
@@ -251,7 +251,6 @@ export const update = mutation({
       if (oldBudget) await ctx.db.patch(oldBudget._id, { spent: Math.max(0, oldBudget.spent - oldTransaction.amount) });
     }
 
-    // Apply NEW impacts
     const newAccount = await ctx.db.get(args.accountId);
     if (newAccount) {
       if (args.type === "income") await ctx.db.patch(args.accountId, { balance: newAccount.balance + args.amount });
@@ -283,6 +282,7 @@ export const update = mutation({
   },
 });
 
+// ── UPDATED: added transactionCount to each category entry ──────────────────
 export const getCategoryBreakdown = query({
   args: {
     month: v.string(),
@@ -307,15 +307,62 @@ export const getCategoryBreakdown = query({
       )
       .collect();
 
-    const categoryTotals = new Map<string, { amount: number; category: any }>();
+    const categoryTotals = new Map<string, { amount: number; transactionCount: number; category: any }>();
 
     for (const transaction of transactions) {
       if (transaction.categoryId) {
         const category = await ctx.db.get(transaction.categoryId);
-        if (category) {
+        if (category && !category.excludeFromAnalytics) {
           const existing = categoryTotals.get(transaction.categoryId);
           categoryTotals.set(transaction.categoryId, {
             amount: (existing?.amount || 0) + transaction.amount,
+            transactionCount: (existing?.transactionCount || 0) + 1,
+            category,
+          });
+        }
+      }
+    }
+
+    return Array.from(categoryTotals.values())
+      .sort((a, b) => b.amount - a.amount);
+  },
+});
+
+// ── NEW: income breakdown by category (for pie chart) ───────────────────────
+export const getIncomeCategoryBreakdown = query({
+  args: {
+    month: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    const startDate = `${args.month}-01`;
+    const endDate = `${args.month}-31`;
+
+    const transactions = await ctx.db
+      .query("transactions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) =>
+        q.and(
+          q.gte(q.field("date"), startDate),
+          q.lte(q.field("date"), endDate),
+          q.eq(q.field("type"), "income"),
+          q.not(q.eq(q.field("isDebt"), true))
+        )
+      )
+      .collect();
+
+    const categoryTotals = new Map<string, { amount: number; transactionCount: number; category: any }>();
+
+    for (const transaction of transactions) {
+      if (transaction.categoryId) {
+        const category = await ctx.db.get(transaction.categoryId);
+        if (category && !category.excludeFromAnalytics) {
+          const existing = categoryTotals.get(transaction.categoryId);
+          categoryTotals.set(transaction.categoryId, {
+            amount: (existing?.amount || 0) + transaction.amount,
+            transactionCount: (existing?.transactionCount || 0) + 1,
             category,
           });
         }

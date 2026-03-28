@@ -21,6 +21,7 @@ export const create = mutation({
     type: v.union(v.literal("income"), v.literal("expense")),
     color: v.string(),
     icon: v.optional(v.string()),
+    excludeFromAnalytics: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -32,6 +33,7 @@ export const create = mutation({
       type: args.type,
       color: args.color,
       icon: args.icon,
+      excludeFromAnalytics: args.excludeFromAnalytics,
     });
   },
 });
@@ -78,6 +80,7 @@ export const update = mutation({
     name: v.string(),
     color: v.string(),
     icon: v.optional(v.string()),
+    excludeFromAnalytics: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -92,6 +95,7 @@ export const update = mutation({
       name: args.name,
       color: args.color,
       icon: args.icon,
+      excludeFromAnalytics: args.excludeFromAnalytics,
     });
   },
 });

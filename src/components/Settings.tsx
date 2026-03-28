@@ -51,7 +51,7 @@ export function Settings() {
   const removeBudget = useMutation(api.budgets.remove);
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", color: "", icon: "Tag" });
+  const [editForm, setEditForm] = useState({ name: "", color: "", icon: "Tag", excludeFromAnalytics: false });
   const [activeCategoryType, setActiveCategoryType] = useState<"expense" | "income">("expense");
   const [showAddForm, setShowAddForm] = useState(false);
   
@@ -59,7 +59,8 @@ export function Settings() {
     name: "", 
     type: "expense" as "income" | "expense", 
     color: "#000000",
-    icon: "Tag"
+    icon: "Tag",
+    excludeFromAnalytics: false
   });
 
   const [showIconPicker, setShowIconPicker] = useState<string | null>(null);
@@ -77,7 +78,7 @@ export function Settings() {
     e.preventDefault();
     try {
       await createCategory({ ...newCategory, type: activeCategoryType });
-      setNewCategory({ ...newCategory, name: "", icon: "Tag" });
+      setNewCategory({ ...newCategory, name: "", icon: "Tag", excludeFromAnalytics: false });
       setShowAddForm(false);
       toast.success("קטגוריה נוספה בהצלחה");
     } catch (error) {
@@ -258,6 +259,19 @@ export function Settings() {
                 </button>
               </div>
 
+              <div className="flex items-center gap-2 px-1">
+                <input
+                  type="checkbox"
+                  id="excludeFromAnalyticsAdd"
+                  checked={newCategory.excludeFromAnalytics}
+                  onChange={(e) => setNewCategory({ ...newCategory, excludeFromAnalytics: e.target.checked })}
+                  className="w-4 h-4 rounded border-slate-300 text-black focus:ring-black"
+                />
+                <label htmlFor="excludeFromAnalyticsAdd" className="text-xs font-bold text-slate-600 cursor-pointer">
+                  החרג מדוחות ואנליטיקה (למשל השקעות או העברות עצמיות)
+                </label>
+              </div>
+
               {showIconPicker === 'new' && (
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xl animate-in fade-in slide-in-from-top-2">
                   <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
@@ -305,7 +319,12 @@ export function Settings() {
                     onEditFormChange={setEditForm}
                     onStartEdit={() => {
                       setEditingId(cat._id);
-                      setEditForm({ name: cat.name, color: cat.color, icon: cat.icon || "Tag" });
+                      setEditForm({ 
+                        name: cat.name, 
+                        color: cat.color, 
+                        icon: cat.icon || "Tag",
+                        excludeFromAnalytics: !!cat.excludeFromAnalytics
+                      } as any);
                     }}
                     onCancelEdit={() => setEditingId(null)}
                     onUpdate={() => handleUpdateCategory(cat._id)}
@@ -571,6 +590,19 @@ function CategoryItem({
             </div>
           </div>
         </div>
+
+        <div className="flex items-center gap-2 px-1">
+          <input
+            type="checkbox"
+            id={`excludeFromAnalyticsEdit-${category._id}`}
+            checked={editForm.excludeFromAnalytics}
+            onChange={(e) => onEditFormChange({ ...editForm, excludeFromAnalytics: e.target.checked })}
+            className="w-4 h-4 rounded border-slate-300 text-black focus:ring-black"
+          />
+          <label htmlFor={`excludeFromAnalyticsEdit-${category._id}`} className="text-[10px] font-bold text-slate-600 cursor-pointer">
+            החרג מדוחות ואנליטיקה
+          </label>
+        </div>
         
         {showIconPicker && (
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-lg animate-in fade-in slide-in-from-top-2">
@@ -604,7 +636,16 @@ function CategoryItem({
         >
           <DynamicIcon name={category.icon || "Tag"} size={18} />
         </div>
-        <span className="text-sm font-bold text-slate-700 truncate">{category.name}</span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-slate-700 truncate">{category.name}</span>
+            {category.excludeFromAnalytics && (
+              <span className="px-1.5 py-0.5 bg-slate-100 text-slate-400 text-[8px] font-black uppercase rounded-md tracking-tighter">
+                מוחרג
+              </span>
+            )}
+          </div>
+        </div>
       </div>
       <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
         <button
