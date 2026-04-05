@@ -1,15 +1,37 @@
 "use client";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useMutation } from "convex/react";
+import { api } from "../convex/_generated/api";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AlertCircle, LogIn, UserPlus, Fingerprint, Eye, EyeOff, Mail, Key, ArrowRight } from "lucide-react";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
+  const sendEmail = useMutation(api.email.sendPasswordResetEmail);
   const [flow, setFlow] = useState<"signIn" | "signUp" | "reset" | "reset-verification">("signIn");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
+
+  const handleResetPassword = async (userEmail: string) => {
+    try {
+      setSubmitting(true);
+      // צור token לאיפוס (בעתיד תוכל לשמור זאת בבסיס הנתונים)
+      const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      
+      // שלח אימייל
+      await sendEmail({ email: userEmail, resetToken });
+      
+      setFlow("reset-verification");
+      toast.success("קוד אימות נשלח למייל שלך!");
+      setSubmitting(false);
+    } catch (error) {
+      console.error("Email error:", error);
+      toast.error("לא הצלחנו לשלוח אימייל. וודא שהמייל תקין ונסה שוב.");
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="w-full space-y-4">
@@ -50,17 +72,22 @@ export function SignInForm() {
         className="flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault();
+          
+          if (flow === "reset") {
+            // כשלוחצים "שלח קוד אימות"
+            handleResetPassword(email);
+            return;
+          }
+          
           setSubmitting(true);
           const formData = new FormData(e.target as HTMLFormElement);
           formData.set("flow", flow);
           
           signIn("password", formData)
             .then(() => {
-              if (flow === "reset") {
-                setFlow("reset-verification");
-                toast.success("קוד אימות נשלח למייל שלך!");
-              } else if (flow === "reset-verification") {
+              if (flow === "reset-verification") {
                 setFlow("signIn");
+                setEmail("");
                 toast.success("הסיסמה שונתה בהצלחה! כעת ניתן להתחבר.");
               } else {
                 toast.success(flow === "signIn" ? "התחברת בהצלחה!" : "נרשמת בהצלחה!");
