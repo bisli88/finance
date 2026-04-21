@@ -138,7 +138,8 @@ export function Analytics() {
       .filter(t => 
         t.type === "expense" && 
         t.date.startsWith(selectedMonth) &&
-        !t.category?.excludeFromAnalytics
+        !t.category?.excludeFromAnalytics &&
+        !t.isDebt
       )
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }, [allTransactions, selectedMonth]);
