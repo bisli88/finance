@@ -203,9 +203,12 @@ export function Accounts() {
               </span>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => toggleExclude({ id: account._id })}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleExclude({ id: account._id });
+                  }}
                   title={account.excludeFromBalance ? "כלול בסכום הכולל" : "החרג מהסכום הכולל"}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border touch-manipulation ${
                     account.excludeFromBalance
                       ? "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100"
                       : "bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
