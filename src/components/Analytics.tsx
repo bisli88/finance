@@ -135,9 +135,13 @@ export function Analytics() {
   const monthExpenses = useMemo(() => {
     if (!allTransactions) return [];
     return allTransactions
-      .filter(t => t.type === "expense" && t.date.startsWith(selectedMonth))
+      .filter(t => 
+        t.type === "expense" && 
+        t.date.startsWith(selectedMonth) &&
+        !t.category?.excludeFromAnalytics
+      )
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [allTransactions, selectedMonth]);
+}, [allTransactions, selectedMonth]);
 
   if (stats === undefined || categoryBreakdown === undefined) {
     return (
