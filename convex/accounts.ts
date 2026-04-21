@@ -33,6 +33,22 @@ export const create = mutation({
     });
   },
 });
+export const toggleExcludeFromBalance = mutation({
+  args: { id: v.id("bankAccounts") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const account = await ctx.db.get(args.id);
+    if (!account || account.userId !== userId) {
+      throw new Error("Account not found or unauthorized");
+    }
+
+    await ctx.db.patch(args.id, {
+      excludeFromBalance: !account.excludeFromBalance,
+    });
+  },
+});
 
 export const updateBalance = mutation({
   args: {
@@ -107,6 +123,8 @@ export const getTotalBalance = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
-    return accounts.reduce((total, account) => total + account.balance, 0);
+    return accounts
+      .filter((account) => !account.excludeFromBalance)
+      .reduce((total, account) => total + account.balance, 0);
   },
 });

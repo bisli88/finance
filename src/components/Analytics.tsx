@@ -98,6 +98,7 @@ export function Analytics() {
   const categoryBreakdown = useQuery(api.transactions.getCategoryBreakdown, { month: selectedMonth });
   const incomeBreakdown = useQuery(api.transactions.getIncomeCategoryBreakdown, { month: selectedMonth });
   const budgets = useQuery(api.budgets.list, { month: selectedMonth });
+  const allTransactions = useQuery(api.transactions.list, { limit: 1000 });
 
   const changeMonth = (delta: number) => {
     const date = new Date(selectedMonth + "-01");
@@ -130,6 +131,13 @@ export function Analytics() {
       color: item.category?.color || fallback[i % fallback.length],
     }));
   }, [incomeBreakdown]);
+
+  const monthExpenses = useMemo(() => {
+    if (!allTransactions) return [];
+    return allTransactions
+      .filter(t => t.type === "expense" && t.date.startsWith(selectedMonth))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [allTransactions, selectedMonth]);
 
   if (stats === undefined || categoryBreakdown === undefined) {
     return (
@@ -312,6 +320,92 @@ export function Analytics() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Expense Transactions List ── */}
+      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
+        <h3 className="font-bold text-slate-900 flex items-center gap-2">
+          <Receipt size={18} className="text-rose-500" />
+          כל ההוצאות של החודש
+        </h3>
+
+        {monthExpenses.length === 0 ? (
+          <div className="py-12 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+            <p className="text-sm font-bold text-slate-400">אין הוצאות לחודש זה</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {Object.entries(
+              monthExpenses.reduce((groups: any, t) => {
+                if (!groups[t.date]) groups[t.date] = [];
+                groups[t.date].push(t);
+                return groups;
+              }, {})
+            )
+              .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+              .map(([date, dayTransactions]: [string, any]) => (
+                <div key={date} className="space-y-3">
+                  <div className="flex items-center gap-4 px-2">
+                    <div className="h-px bg-slate-100 flex-1" />
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] bg-white px-3 py-1 rounded-lg border border-slate-100 shadow-sm">
+                      {new Date(date).toLocaleDateString("he-IL", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </h4>
+                    <div className="h-px bg-slate-100 flex-1" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {dayTransactions.map((t: any) => (
+                      <div
+                        key={t._id}
+                        className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:border-rose-100 transition-all group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div
+                            className="p-3 rounded-xl flex-shrink-0 transition-transform group-hover:scale-110"
+                            style={{
+                              backgroundColor: t.category?.color
+                                ? `${t.category.color}15`
+                                : "#f1f5f9",
+                              color: t.category?.color || "#64748b",
+                            }}
+                          >
+                            <DynamicIcon name={t.category?.icon || "Tag"} size={20} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 text-sm">{t.title}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 flex-wrap">
+                              {t.account?.name}
+                              {t.category && (
+                                <>
+                                  <span className="text-slate-300">•</span>
+                                  <span className="text-slate-500 font-medium lowercase tracking-normal">
+                                    {t.category.name}
+                                  </span>
+                                </>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-left flex-shrink-0">
+                          <p className="font-black text-sm text-rose-600">
+                            -₪{t.amount.toLocaleString()}
+                          </p>
+                          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter text-left">
+                            הוצאה
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
           </div>
         )}
       </div>

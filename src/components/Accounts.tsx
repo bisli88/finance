@@ -20,6 +20,7 @@ export function Accounts() {
   const createAccount = useMutation(api.accounts.create);
   const updateAccount = useMutation(api.accounts.update);
   const removeAccount = useMutation(api.accounts.remove);
+  const toggleExclude = useMutation(api.accounts.toggleExcludeFromBalance);
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -200,7 +201,20 @@ export function Accounts() {
               <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
                 {account.currency}
               </span>
-              <div className="flex -space-x-1.5 space-x-reverse opacity-40">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => toggleExclude({ id: account._id })}
+                  title={account.excludeFromBalance ? "כלול בסכום הכולל" : "החרג מהסכום הכולל"}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${
+                    account.excludeFromBalance
+                      ? "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100"
+                      : "bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  }`}
+                >
+                  <Wallet size={9} />
+                  {account.excludeFromBalance ? "מוחרג" : "כלול"}
+                </button>
+                <div className="flex -space-x-1.5 space-x-reverse opacity-40">
                 <div className="w-5 h-5 rounded-full bg-slate-100 border border-white flex items-center justify-center">
                   <CreditCard size={8} className="text-slate-400" />
                 </div>
@@ -210,6 +224,7 @@ export function Accounts() {
               </div>
             </div>
           </div>
+        </div>
         ))}
 
         {!showForm && (

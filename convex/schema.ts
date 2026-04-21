@@ -8,6 +8,7 @@ const applicationTables = {
     name: v.string(),
     balance: v.number(),
     currency: v.string(),
+    excludeFromBalance: v.optional(v.boolean()),
   }).index("by_user", ["userId"]),
 
   categories: defineTable({

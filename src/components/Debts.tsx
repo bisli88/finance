@@ -39,6 +39,8 @@ export function Debts() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState<string | null>(null);
+  const [showClosedDebts, setShowClosedDebts] = useState(false);
+  const [closingDebtId, setClosingDebtId] = useState<string | null>(null);
 
   // Disable body scroll when modal is open
   useEffect(() => {
@@ -358,21 +360,23 @@ export function Debts() {
       )}
 
       {/* Debt List */}
-      <div className="grid grid-cols-1 gap-6">
-        {debts.length === 0 ? (
-          <div className="bg-white rounded-[2rem] border border-slate-200 p-12 text-center">
-            <Banknote className="w-12 h-12 text-slate-100 mx-auto mb-4" />
-            <h3 className="text-lg font-black text-slate-900">אין חובות פעילים</h3>
-            <p className="text-slate-400">כל החובות שלך יופיעו כאן</p>
-          </div>
-        ) : (
-          debts.map((debt) => {
+      <div className="space-y-10">
+        {/* Active Debts */}
+        <div className="grid grid-cols-1 gap-6">
+          {debts.filter(d => d.status !== "paid").length === 0 ? (
+            <div className="bg-white rounded-[2rem] border border-slate-200 p-12 text-center">
+              <Banknote className="w-12 h-12 text-slate-100 mx-auto mb-4" />
+              <h3 className="text-lg font-black text-slate-900">אין חובות פעילים</h3>
+              <p className="text-slate-400">כל החובות שלך יופיעו כאן</p>
+            </div>
+          ) : (
+            debts.filter(d => d.status !== "paid").map((debt) => {
             const remaining = debt.totalAmount - debt.amountPaid;
             const progress = (debt.amountPaid / debt.totalAmount) * 100;
             const isOwedToMe = debt.type === "they_owe_me";
             
             return (
-              <div key={debt._id} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden group">
+              <div key={debt._id} className={`bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden group transition-all duration-500 ${closingDebtId === debt._id ? "opacity-0 scale-95 -translate-y-2" : "opacity-100"}`}>
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-4">
@@ -445,8 +449,14 @@ export function Debts() {
                         רישום תשלום
                       </button>
                       <button 
-                        onClick={() => {
-                          if (confirm("לסמן כחוב שנסגר במלואו?")) markAsPaid({ id: debt._id });
+                        onClick={async () => {
+                          if (confirm("לסמן כחוב שנסגר במלואו?")) {
+                            setClosingDebtId(debt._id);
+                            setTimeout(async () => {
+                              await markAsPaid({ id: debt._id });
+                              setClosingDebtId(null);
+                            }, 600);
+                          }
                         }}
                         className="px-4 py-3 bg-white border-2 border-slate-100 text-slate-900 rounded-xl text-sm font-black flex items-center justify-center gap-2 hover:border-black transition-all"
                       >
@@ -549,6 +559,66 @@ export function Debts() {
               </div>
             );
           })
+        )}
+        </div>
+
+        {/* Closed Debts Section */}
+        {debts.filter(d => d.status === "paid").length > 0 && (
+          <div className="space-y-4">
+            <button
+              onClick={() => setShowClosedDebts(!showClosedDebts)}
+              className="w-full flex items-center justify-between px-5 py-3.5 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <CheckCircle2 size={16} className="text-slate-400" />
+                <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                  חובות שנסגרו
+                </span>
+                <span className="bg-slate-200 text-slate-500 text-[10px] font-black px-2 py-0.5 rounded-full">
+                  {debts.filter(d => d.status === "paid").length}
+                </span>
+              </div>
+              <ChevronDown
+                size={16}
+                className={`text-slate-400 transition-transform duration-300 ${showClosedDebts ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {showClosedDebts && (
+              <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                {debts.filter(d => d.status === "paid").map((debt) => {
+                  const isOwedToMe = debt.type === "they_owe_me";
+                  return (
+                    <div key={debt._id} className="bg-slate-50 rounded-2xl border border-slate-100 p-5 flex items-center justify-between opacity-60 hover:opacity-80 transition-opacity">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-2.5 rounded-xl ${isOwedToMe ? "bg-green-50 text-green-400" : "bg-red-50 text-red-400"}`}>
+                          {isOwedToMe ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />}
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-600 text-sm">{debt.personName}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            ₪{debt.totalAmount.toLocaleString()} • {debt.createdDate}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest bg-slate-200 text-slate-400 px-2 py-1 rounded-lg">
+                          נסגר
+                        </span>
+                        <button
+                          onClick={() => handleDelete(debt._id)}
+                          className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          title="מחק"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
