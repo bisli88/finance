@@ -8,7 +8,6 @@ import { AlertCircle, LogIn, UserPlus, Fingerprint, Eye, EyeOff, Mail, Key, Arro
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
-  const sendEmail = useMutation(api.email.sendPasswordResetEmail);
   const [flow, setFlow] = useState<"signIn" | "signUp" | "reset" | "reset-verification">("signIn");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -19,9 +18,6 @@ export function SignInForm() {
       setSubmitting(true);
       // צור token לאיפוס (בעתיד תוכל לשמור זאת בבסיס הנתונים)
       const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      
-      // שלח אימייל
-      await sendEmail({ email: userEmail, resetToken });
       
       setFlow("reset-verification");
       toast.success("קוד אימות נשלח למייל שלך!");
